@@ -85,7 +85,7 @@
     <p>味方の<b>圧</b>は1本（0〜100）。<b>溜める</b>技で上がり、<b>使う</b>技で下がり、<b>放圧</b>で0に戻る。<b>100に達すると暴発</b>＝味方全員が傷つき、次のターンは動けない。</p>
     <p>敵にも圧がある。<b>過熱</b>で敵の圧を上げ、溢れさせれば敵が暴発する（大ダメージ＋敵は1回休み）。敵の大技は全員に当たる（かばえない）。</p>
     <p>仲間の自動人形は<b>作戦</b>で動く。作戦は戦闘中いつでも1タップで切り替えられる。</p>
-    <p>敵は3体を順に戦う（A→B→A改）。戦闘の間にHPが30回復する。敵の次の手は常に表示される。</p>
+    <p>敵は3体を順に戦う（A→B→A改）。<b>各戦闘は圧30から始まる</b>（それ以上持ち越していればそのまま）。戦闘の間にHPが30回復する。敵の次の手は常に表示される。</p>
     <p class="dim">数値はすべて仮置き。ランが終わると結果画面が出るので「コピー」してサイファへ。</p>
   </div>
   <button class="big" id="b-start">出撃する</button>
@@ -154,12 +154,13 @@
 
 <script>
 'use strict';
-const VER = 'p0-0.1.0';
+const VER = 'p0-0.2.0';
 // ===== 調整値（すべて仮置き＝実機の感触で動かす）=====
 const TUNE = {
   hero:{hp:100}, auto:{hp:60}, overflow:100,
   burst:{selfDmg:15, resetTo:30},          // 味方の暴発＝全員に15・圧は30へ・次ターン行動不能
   restHeal:30,                             // 戦闘間の回復
+  startPP:30,                              // 各戦闘の開幕の圧の下限（p0-0.2.0・案1＝初手から過熱が開く。多く持ち越していればそのまま）
   cmd:{
     atk:  {name:'攻撃', kind:'溜める', dmg:12, pp:+20, need:0},
     grd:  {name:'防御', kind:'溜める', pp:+15, need:0},
@@ -175,7 +176,7 @@ const TUNE = {
   tankRate:0.6, autoAtk:{dmg:8, pp:+10}, autoWeak:{dmg:6, pp:+10}, autoSmash:{base:15, rate:0.3, pp:-40, need:50}, autoVent:{healRate:0.3, need:60},
   enemies:[
     {id:'A', name:'装甲機兵', trait:'溜まりやすい・逃がさない', hp:110, armor:5, ppGain:25, atk:12, big:{name:'蒸気砲', dmg:28, need:75}, vent:null, burst:{dmg:50}},
-    {id:'B', name:'放圧蟲',   trait:'圧を逃がすのが上手い',     hp:80,  armor:0, ppGain:20, atk:10, big:null, vent:{need:60, heal:20}, burst:{dmg:30}},
+    {id:'B', name:'放圧蟲',   trait:'攻撃のたびに味方の圧+15・圧60で放圧', hp:80,  armor:0, ppGain:20, atk:10, steam:15, big:null, vent:{need:60, heal:20}, burst:{dmg:30}},  // steam＝蒸気を浴びせる（p0-0.2.0）＝味方の溢れ管理がBの問い
     {id:'A2',name:'装甲機兵・改', trait:'溜まりやすい・逃がさない', hp:140, armor:6, ppGain:25, atk:13, big:{name:'蒸気砲', dmg:32, need:75}, vent:null, burst:{dmg:50}},
   ],
 };
@@ -185,13 +186,14 @@ const $ = id => document.getElementById(id);
 const show = id => { document.querySelectorAll('.scr').forEach(e=>e.classList.remove('on')); $(id).classList.add('on'); };
 function newRun(){
   S = { hero:TUNE.hero.hp, auto:TUNE.auto.hp, pp:0, skip:false, guard:false, tactic:0, bi:0, e:null, turn:0, over:false };
-  REC = { ver:VER, start:Date.now(), turns:[], burstsP:0, burstsE:0, tacticSwitch:0, dmg:{}, result:'', battles:[], q:{} };
+  REC = { ver:VER, start:Date.now(), turns:[], burstsP:0, burstsE:0, steam:0, tacticSwitch:0, dmg:{}, result:'', battles:[], q:{} };
   startBattle();
 }
 function startBattle(){
   const t = TUNE.enemies[S.bi];
   S.e = { def:t, hp:t.hp, pp:0, skip:false };
   S.turn = 0; S.guard=false;
+  if (S.pp < TUNE.startPP) S.pp = TUNE.startPP;   // 開幕の圧の下限（p0-0.2.0）
   REC.dmg[t.id] = REC.dmg[t.id] || {hit:0, burst:0, turns:0, start:Date.now()};
   $('f-enemy').textContent = t.id; $('f-enemy').className = 'fig enemy' + (t.id==='B'?' b':'');
   $('f-hero').className='fig hero'; $('f-auto').className='fig auto';
@@ -205,7 +207,7 @@ function enemyNext(){
   if (e.skip) return '次: <b>暴発の反動で動けない</b>';
   if (d.vent && e.pp >= d.vent.need) return `次: <b>放圧</b>（HP+${d.vent.heal}・圧0）`;
   if (d.big && e.pp >= d.big.need) return `次: <b>${d.big.name} ${d.big.dmg}＝全員に</b>（圧-${d.big.need}）`;
-  return `次: <b>攻撃 ${d.atk}</b>（圧+${d.ppGain}）`;
+  return `次: <b>攻撃 ${d.atk}</b>（圧+${d.ppGain}）` + (d.steam ? `＋<b>蒸気＝味方の圧+${d.steam}</b>` : '');
 }
 function render(){
   const e=S.e, d=e.def;
@@ -305,6 +307,8 @@ function enemyAct(autoGuard){
   }
   else if (autoGuard && S.auto>0){ dmg = Math.ceil(dmg*TUNE.tankRate); S.auto -= dmg; hit('f-auto'); m += ` 敵の${name} ${dmg} → 人形がかばった。`; if (S.auto<=0){ S.auto=0; m += ' <span class="warn">人形が壊れた（設計図は残る）。</span>'; } }
   else { S.hero -= dmg; hit('f-hero'); m += ` 敵の${name} <b>${dmg}</b>。`; }
+  // 蒸気を浴びせる（B）＝通常攻撃のたびに味方の圧が上がる。防御・かばうでは防げない（p0-0.2.0）
+  if (!isBig && d.steam){ S.pp += d.steam; REC.steam++; m += ` <span class="warn">蒸気を浴びた＝味方の圧+${d.steam}。</span>`; if (S.pp >= TUNE.overflow) m += checkPartyBurst(); }
   // 敵の圧が溢れる（自分で溜めすぎ）
   if (e.pp >= TUNE.overflow){ m += checkEnemyBurst(); }
   return m;
@@ -318,7 +322,7 @@ function afterBattle(win){
   S.hero = Math.min(TUNE.hero.hp, S.hero + TUNE.restHeal); if (S.auto>0) S.auto = Math.min(TUNE.auto.hp, S.auto + TUNE.restHeal);
   const n = TUNE.enemies[S.bi];
   $('i-title').textContent = `${d.name} を倒した`;
-  $('i-body').innerHTML = `<p>小休止＝HP+${TUNE.restHeal}。圧は ${S.pp} のまま持ち越し。</p><p>次の敵＝<b>${n.name}</b>（${n.trait}）</p>`;
+  $('i-body').innerHTML = `<p>小休止＝HP+${TUNE.restHeal}。${S.pp < TUNE.startPP ? `圧は ${S.pp} → 開幕の下限 ${TUNE.startPP} まで補充して次へ。` : `圧は ${S.pp} のまま持ち越し。`}</p><p>次の敵＝<b>${n.name}</b>（${n.trait}）</p>`;
   S.over=false; show('s-inter');
 }
 // ===== 結果 =====
@@ -341,7 +345,7 @@ function showResult(){
   h += `<p>コマンドの分布＝${Object.entries(s.dist).map(([k,v])=>`${k}${v}`).join('・')}</p>`;
   h += `<p>連打率（直前と同じコマンド）＝<b>${s.rep}%</b>　作戦の切替＝${s.sw}回</p>`;
   h += `<p>1手の考える時間＝平均 <b>${(s.think/1000).toFixed(1)}秒</b>・中央値 ${(s.thinkMed/1000).toFixed(1)}秒</p>`;
-  h += `<p>暴発＝味方 ${REC.burstsP}回・敵 ${REC.burstsE}回</p>`;
+  h += `<p>暴発＝味方 ${REC.burstsP}回・敵 ${REC.burstsE}回　蒸気を浴びた ${REC.steam}回</p>`;
   $('r-table').innerHTML = h;
   document.querySelectorAll('#qs button').forEach(b=>b.classList.remove('sel'));
   REC.q = {}; buildOut(); show('s-result');
@@ -355,7 +359,7 @@ function buildOut(){
   REC.battles.forEach(b=>L.push(`[敵${b.id}] ${b.win?'勝':'負'} ターン${b.turns} 攻撃で${b.hit} 暴発で${b.burst} ${b.sec}秒`));
   L.push(`[分布] ${Object.entries(s.dist).map(([k,v])=>`${k}${v}`).join(' ')}`);
   L.push(`[連打率] ${s.rep}% / 作戦切替 ${s.sw}回 / 考える時間 平均${(s.think/1000).toFixed(1)}s 中央値${(s.thinkMed/1000).toFixed(1)}s`);
-  L.push(`[暴発] 味方${REC.burstsP} 敵${REC.burstsE}`);
+  L.push(`[暴発] 味方${REC.burstsP} 敵${REC.burstsE} / 蒸気を浴びた ${REC.steam}回`);
   L.push(`[Q1 迷い] ${REC.q.q1||'未回答'} / [Q2 敵ごと] ${REC.q.q2||'未回答'} / [Q3 もう1回] ${REC.q.q3||'未回答'}`);
   L.push(`[手順] ` + REC.turns.map(t=>`${t.e}${t.turn}:${t.cmd.slice(0,2)}@${t.ppBefore}/${t.epp}${t.tactic[0]}`).join(' '));
   $('out').value = L.join('\n');
