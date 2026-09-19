@@ -240,7 +240,7 @@
 </div>
 <script>
 'use strict';
-const VER = 'p2-0.1.0';
+const VER = 'p2-0.2.0';
 // ===== 調整値（すべて仮置き＝実機の感触で動かす）=====
 const TUNE = {
   hero:{hp:100}, overflow:100,
@@ -278,7 +278,8 @@ const TUNE = {
   ],
   // --- Phase 1 ---
   ppStarts:[0,25,50],                      // 敵の開幕の圧（ノードごと・見せる）
-  layers:[ ['fight'], ['fight','elite'], ['treasure','event'], ['fight'], ['rest','treasure'], ['fight','elite'], ['event','rest','treasure'], ['fight'] ],  // 8層＋ボス＝9ノード・戦闘は5＋ボス（p1-0.2.0）
+  // 8層＋ボス＝9ノード・戦闘は5＋ボス（p1-0.2.0）。p2-0.2.0＝#2「休憩 vs 宝」の置き方だけ変更＝7層目を「休憩1つ（一本道・ボス前の全快が必ずある）」にし、5層目の「休憩 vs 宝」を「後で必ず休める」と分かったうえで選ぶ形にする（整備・宝の中身・数値は触らない）。5層目は幅2固定＋前の層の全ノードから両方へ行ける（full）＝毎フロア必ず「休憩 vs 宝」の場面が1回立つ（#2 の計器）。{pool,w,full} で層の幅と接続を固定できる
+  layers:[ ['fight'], ['fight','elite'], ['treasure','event'], ['fight'], {pool:['rest','treasure'], w:2, full:true}, ['fight','elite'], {pool:['rest'], w:1}, ['fight'] ],
   floors:2,
   // --- Phase 2 ---
   pools:{ 1:{fight:['A','B','C'], elite:'A2', boss:'A2'}, 2:{fight:['D','E','F'], elite:'D2', boss:'G'} },   // 敵＝フロア別プール（問2 a）
@@ -354,8 +355,9 @@ function genMap(seed, floor){
   floor = floor || 1;
   const R = rng(seed), pick = arr => arr[Math.floor(R()*arr.length)];
   const layers = [];
-  TUNE.layers.forEach((pool, li) => {
-    const w = TUNE.width.min + Math.floor(R()*(TUNE.width.max-TUNE.width.min+1));
+  TUNE.layers.forEach((spec, li) => {
+    const pool = Array.isArray(spec) ? spec : spec.pool;
+    const w = (!Array.isArray(spec) && spec.w) ? spec.w : TUNE.width.min + Math.floor(R()*(TUNE.width.max-TUNE.width.min+1));
     const types = shuffle(pool, R);
     while (types.length < w) types.push(pool.includes('fight') ? 'fight' : pool.includes('treasure') ? 'treasure' : pick(pool));
     const nodes = types.slice(0,w).map((type,i)=>makeNode(type, li, i, R, floor));
@@ -366,6 +368,8 @@ function genMap(seed, floor){
   layers.push([makeNode('boss', layers.length, 0, R, floor)]);
   for (let k=0; k<layers.length-1; k++){
     const A = layers[k], B = layers[k+1];
+    const specB = TUNE.layers[k+1];
+    if (specB && !Array.isArray(specB) && specB.full){ A.forEach(n => { n.next = B.map((_,j)=>j); }); continue; }   // full＝前の層の全ノードから次の層の全ノードへ
     const proj = i => B.length===1 ? 0 : (A.length===1 ? Math.floor(B.length/2) : Math.round(i*(B.length-1)/(A.length-1)));
     A.forEach((n,i) => {
       const j0 = proj(i); n.next = [j0];
