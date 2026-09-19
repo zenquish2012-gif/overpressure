@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="OP0">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>OVERPRESSURE Phase 0（記録用・据え置き）</title>
+<style>
+  :root { --bg:#14100c; --panel:#221a12; --line:#6b5330; --brass:#d9a441; --brass2:#8a6a2b; --text:#f2e6cf; --dim:#a08f74;
+          --hp:#c94b3a; --hpbg:#3a1d19; --pp:#4fb3d9; --ppbg:#16303a; --warn:#ff6a3d; --ok:#7bc96f;
+          --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px); }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { margin:0; height:100%; background:var(--bg); color:var(--text); font-family:-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif; font-size:18px; overflow:hidden; touch-action:manipulation; }
+  #app { position:fixed; inset:0; padding:calc(var(--sat) + 4px) 8px calc(var(--sab) + 6px); display:flex; flex-direction:column; gap:6px; }
+  .scr { display:none; flex:1; flex-direction:column; gap:8px; min-height:0; }
+  .scr.on { display:flex; }
+  h1 { font-size:26px; margin:6px 0 0; color:var(--brass); letter-spacing:.06em; }
+  h2 { font-size:19px; margin:4px 0; color:var(--brass); }
+  p { margin:4px 0; line-height:1.5; }
+  .dim { color:var(--dim); font-size:15px; }
+  .box { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:6px 10px; }
+  button { font:inherit; color:var(--text); background:#2c2117; border:2px solid var(--brass2); border-radius:12px; padding:6px 6px; min-height:54px; width:100%; text-align:center; }
+  button:active { background:#3d2e1e; }
+  button:disabled { opacity:.38; }
+  button.big { font-size:20px; min-height:60px; border-color:var(--brass); }
+  .cmdgrid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .cmd b { display:block; font-size:19px; line-height:1.15; }
+  .cmd small { display:block; color:var(--dim); font-size:12.5px; line-height:1.15; margin-top:2px; }
+  .cmd.vent { border-color:var(--pp); }
+  .cmd.heat { border-color:var(--warn); }
+  .row { display:flex; gap:8px; align-items:center; }
+  .bar { position:relative; height:16px; background:var(--hpbg); border-radius:8px; overflow:hidden; border:1px solid #000; }
+  .bar > i { position:absolute; left:0; top:0; bottom:0; background:var(--hp); transition:width .25s; }
+  .bar.pp { background:var(--ppbg); }
+  .bar.pp > i { background:var(--pp); }
+  .bar.pp.hot > i { background:var(--warn); }
+  .bar .mark { position:absolute; top:0; bottom:0; width:2px; background:#fff; opacity:.6; }
+  .lbl { display:flex; justify-content:space-between; font-size:15px; }
+  .field { flex:1; display:flex; flex-direction:column; gap:5px; min-height:0; }
+  .stage { position:relative; flex:1; min-height:96px; border:1px solid var(--line); border-radius:10px; background:linear-gradient(#1c1610,#120e0a); overflow:hidden; }
+  .fig { position:absolute; display:flex; align-items:center; justify-content:center; font-size:13px; color:#000; font-weight:700; }
+  .fig.enemy { width:64px; height:64px; background:#9a8f7a; border-radius:12px; left:50%; top:10px; transform:translateX(-50%); }
+  .fig.enemy.b { background:#7fa88a; border-radius:50%; width:58px; height:58px; }
+  .fig.hero { width:44px; height:44px; background:var(--brass); border-radius:8px; left:30%; bottom:8px; transform:translateX(-50%); }
+  .fig.auto { width:44px; height:44px; background:#8fb7c9; border-radius:50%; left:64%; bottom:8px; transform:translateX(-50%); }
+  .fig.hit { animation:hit .35s; }
+  @keyframes hit { 0%{filter:brightness(2)} 50%{transform:translateX(-50%) translateY(6px)} 100%{filter:none} }
+  .fig.dead { opacity:.25; }
+  .next { text-align:left; font-size:15px; color:var(--dim); margin-top:4px; }
+  .next b { color:var(--text); }
+  .log { font-size:13.5px; color:var(--dim); line-height:1.3; height:2.6em; overflow:hidden; }
+  .log b { color:var(--text); }
+  .log .warn { color:var(--warn); font-weight:700; }
+  .tactic { display:flex; gap:8px; align-items:stretch; }
+  .tactic button { min-height:48px; padding:4px; }
+  .tactic .cur { flex:1; font-size:15px; color:var(--dim); display:flex; flex-direction:column; justify-content:center; }
+  .tactic .cur b { color:var(--text); font-size:17px; }
+  textarea { width:100%; height:180px; font:13px/1.4 ui-monospace,Menlo,monospace; background:#0d0a07; color:var(--text); border:1px solid var(--line); border-radius:8px; }
+  .qs button { min-height:48px; margin:3px 0; }
+  .qs .sel { background:#4a3618; border-color:var(--brass); }
+  .ver { position:fixed; right:10px; top:calc(var(--sat) + 4px); font-size:12px; color:var(--dim); }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  td,th { border-bottom:1px solid var(--line); padding:3px 4px; text-align:left; }
+  .flash { position:absolute; inset:0; background:rgba(255,106,61,.35); animation:fl .5s forwards; pointer-events:none; }
+  @keyframes fl { to { opacity:0 } }
+  .scrollp { overflow:auto; -webkit-overflow-scrolling:touch; flex:1; min-height:0; }
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ===== タイトル ===== -->
+<section class="scr on" id="s-title">
+  <h1>OVERPRESSURE</h1>
+  <p class="dim">Phase 0 計測版（図形のみ・乱数なし）<span id="ver"></span></p>
+  <div class="box scrollp">
+    <h2>測ること＝1問</h2>
+    <p><b>毎ターン迷うか／連打で済むか。</b></p>
+    <h2>ルール</h2>
+    <p>味方の<b>圧</b>は1本（0〜100）。<b>溜める</b>技で上がり、<b>使う</b>技で下がり、<b>放圧</b>で0に戻る。<b>100に達すると暴発</b>＝味方全員が傷つき、次のターンは動けない。</p>
+    <p>敵にも圧がある。<b>過熱</b>で敵の圧を上げ、溢れさせれば敵が暴発する（大ダメージ＋敵は1回休み）。敵の大技は全員に当たる（かばえない）。</p>
+    <p>仲間の自動人形は<b>作戦</b>で動く。作戦は戦闘中いつでも1タップで切り替えられる。</p>
+    <p>敵は3体を順に戦う（A→B→A改）。<b>各戦闘は圧30から始まる</b>（それ以上持ち越していればそのまま）。戦闘の間にHPが30回復する。敵の次の手は常に表示される。</p>
+    <p class="dim">数値はすべて仮置き。ランが終わると結果画面が出るので「コピー」してサイファへ。</p>
+  </div>
+  <button class="big" id="b-start">出撃する</button>
+</section>
+
+<!-- ===== 戦闘 ===== -->
+<section class="scr" id="s-battle">
+  <div class="field">
+    <div class="box">
+      <div class="lbl"><span id="e-name">敵</span><span id="e-hp-t"></span></div>
+      <div class="bar"><i id="e-hp"></i></div>
+      <div class="lbl" style="margin-top:4px"><span>敵の圧 <span class="dim" id="e-trait"></span></span><span id="e-pp-t"></span></div>
+      <div class="bar pp" id="e-pp-bar"><i id="e-pp"></i><div class="mark" style="left:100%"></div></div>
+      <div class="next" id="e-next"></div>
+    </div>
+    <div class="stage" id="stage">
+      <div class="fig enemy" id="f-enemy">A</div>
+      <div class="fig hero" id="f-hero">主</div>
+      <div class="fig auto" id="f-auto">人形</div>
+    </div>
+    <div class="box">
+      <div class="lbl"><span>主人公</span><span id="h-hp-t"></span></div>
+      <div class="bar"><i id="h-hp"></i></div>
+      <div class="lbl" style="margin-top:4px"><span>自動人形</span><span id="a-hp-t"></span></div>
+      <div class="bar"><i id="a-hp"></i></div>
+      <div class="lbl" style="margin-top:4px"><span><b>味方の圧</b></span><span id="p-pp-t"></span></div>
+      <div class="bar pp" id="p-pp-bar"><i id="p-pp"></i></div>
+    </div>
+    <div class="log" id="log"></div>
+    <div class="tactic">
+      <div class="cur">作戦（自動人形）<b id="t-name"></b><span id="t-desc"></span></div>
+      <button id="b-tactic" style="width:40%">作戦を<br>切替</button>
+    </div>
+    <div class="cmdgrid" id="cmds"></div>
+  </div>
+</section>
+
+<!-- ===== 幕間 ===== -->
+<section class="scr" id="s-inter">
+  <h2 id="i-title"></h2>
+  <div class="box" id="i-body"></div>
+  <button class="big" id="b-next">次へ</button>
+</section>
+
+<!-- ===== 結果 ===== -->
+<section class="scr" id="s-result">
+  <h2>結果</h2>
+  <div class="scrollp">
+    <div class="box" id="r-table"></div>
+    <div class="box qs" id="qs">
+      <p><b>Q1 毎ターン迷いましたか</b></p>
+      <div class="row"><button data-q="q1" data-v="迷った">迷った</button><button data-q="q1" data-v="半々">半々</button><button data-q="q1" data-v="連打で済んだ">連打で済んだ</button></div>
+      <p><b>Q2 敵ごとに攻め方を変えましたか</b></p>
+      <div class="row"><button data-q="q2" data-v="変えた">変えた</button><button data-q="q2" data-v="少し">少し</button><button data-q="q2" data-v="同じ">同じ</button></div>
+      <p><b>Q3 もう1回やりたいですか</b></p>
+      <div class="row"><button data-q="q3" data-v="はい">はい</button><button data-q="q3" data-v="どちらとも">どちらとも</button><button data-q="q3" data-v="いいえ">いいえ</button></div>
+    </div>
+    <div class="box">
+      <button id="b-copy">結果をコピー</button>
+      <textarea id="out" readonly></textarea>
+    </div>
+    <button class="big" id="b-again">もう1回</button>
+  </div>
+</section>
+</div>
+
+<script>
+'use strict';
+const VER = 'p0-0.2.0';
+// ===== 調整値（すべて仮置き＝実機の感触で動かす）=====
+const TUNE = {
+  hero:{hp:100}, auto:{hp:60}, overflow:100,
+  burst:{selfDmg:15, resetTo:30},          // 味方の暴発＝全員に15・圧は30へ・次ターン行動不能
+  restHeal:30,                             // 戦闘間の回復
+  startPP:30,                              // 各戦闘の開幕の圧の下限（p0-0.2.0・案1＝初手から過熱が開く。多く持ち越していればそのまま）
+  cmd:{
+    atk:  {name:'攻撃', kind:'溜める', dmg:12, pp:+20, need:0},
+    grd:  {name:'防御', kind:'溜める', pp:+15, need:0},
+    smash:{name:'強打', kind:'使う',  base:20, rate:0.4, pp:-40, need:40},
+    heat: {name:'過熱', kind:'使う',  dmg:5, epp:+30, pp:-20, need:20},
+    vent: {name:'放圧', kind:'逃がす', healRate:0.3, need:1},
+  },
+  tactics:[
+    {key:'tank',  name:'かばう型',  desc:'敵の攻撃を人形が受ける（被害6割）。圧+10'},
+    {key:'dps',   name:'撃つ型',    desc:'圧50以上で強打（圧-40）。それ以外は攻撃（圧+10）'},
+    {key:'heal',  name:'逃がす型',  desc:'圧60以上で放圧（回復・圧0）。それ以外は弱攻撃（圧+10）'},
+  ],
+  tankRate:0.6, autoAtk:{dmg:8, pp:+10}, autoWeak:{dmg:6, pp:+10}, autoSmash:{base:15, rate:0.3, pp:-40, need:50}, autoVent:{healRate:0.3, need:60},
+  enemies:[
+    {id:'A', name:'装甲機兵', trait:'溜まりやすい・逃がさない', hp:110, armor:5, ppGain:25, atk:12, big:{name:'蒸気砲', dmg:28, need:75}, vent:null, burst:{dmg:50}},
+    {id:'B', name:'放圧蟲',   trait:'攻撃のたびに味方の圧+15・圧60で放圧', hp:80,  armor:0, ppGain:20, atk:10, steam:15, big:null, vent:{need:60, heal:20}, burst:{dmg:30}},  // steam＝蒸気を浴びせる（p0-0.2.0）＝味方の溢れ管理がBの問い
+    {id:'A2',name:'装甲機兵・改', trait:'溜まりやすい・逃がさない', hp:140, armor:6, ppGain:25, atk:13, big:{name:'蒸気砲', dmg:32, need:75}, vent:null, burst:{dmg:50}},
+  ],
+};
+// ===== 状態 =====
+let S, REC;
+const $ = id => document.getElementById(id);
+const show = id => { document.querySelectorAll('.scr').forEach(e=>e.classList.remove('on')); $(id).classList.add('on'); };
+function newRun(){
+  S = { hero:TUNE.hero.hp, auto:TUNE.auto.hp, pp:0, skip:false, guard:false, tactic:0, bi:0, e:null, turn:0, over:false };
+  REC = { ver:VER, start:Date.now(), turns:[], burstsP:0, burstsE:0, steam:0, tacticSwitch:0, dmg:{}, result:'', battles:[], q:{} };
+  startBattle();
+}
+function startBattle(){
+  const t = TUNE.enemies[S.bi];
+  S.e = { def:t, hp:t.hp, pp:0, skip:false };
+  S.turn = 0; S.guard=false;
+  if (S.pp < TUNE.startPP) S.pp = TUNE.startPP;   // 開幕の圧の下限（p0-0.2.0）
+  REC.dmg[t.id] = REC.dmg[t.id] || {hit:0, burst:0, turns:0, start:Date.now()};
+  $('f-enemy').textContent = t.id; $('f-enemy').className = 'fig enemy' + (t.id==='B'?' b':'');
+  $('f-hero').className='fig hero'; $('f-auto').className='fig auto';
+  setLog(`<b>${t.name}</b> が現れた。`);
+  show('s-battle'); render(); armCmds();
+}
+// ===== 描画 =====
+function bar(id, v, max){ $(id).style.width = Math.max(0, Math.min(100, v/max*100)) + '%'; }
+function enemyNext(){
+  const e = S.e, d = e.def;
+  if (e.skip) return '次: <b>暴発の反動で動けない</b>';
+  if (d.vent && e.pp >= d.vent.need) return `次: <b>放圧</b>（HP+${d.vent.heal}・圧0）`;
+  if (d.big && e.pp >= d.big.need) return `次: <b>${d.big.name} ${d.big.dmg}＝全員に</b>（圧-${d.big.need}）`;
+  return `次: <b>攻撃 ${d.atk}</b>（圧+${d.ppGain}）` + (d.steam ? `＋<b>蒸気＝味方の圧+${d.steam}</b>` : '');
+}
+function render(){
+  const e=S.e, d=e.def;
+  $('e-name').textContent = d.name; $('e-trait').textContent = '（'+d.trait+'）';
+  $('e-hp-t').textContent = `${e.hp}/${d.hp}`; bar('e-hp', e.hp, d.hp);
+  $('e-pp-t').textContent = `${e.pp}/${TUNE.overflow}`; bar('e-pp', e.pp, TUNE.overflow); $('e-pp-bar').classList.toggle('hot', e.pp>=70);
+  $('e-next').innerHTML = enemyNext();
+  $('h-hp-t').textContent = `${S.hero}/${TUNE.hero.hp}`; bar('h-hp', S.hero, TUNE.hero.hp);
+  $('a-hp-t').textContent = S.auto>0 ? `${S.auto}/${TUNE.auto.hp}` : '破壊（設計図は残る）'; bar('a-hp', S.auto, TUNE.auto.hp);
+  $('p-pp-t').textContent = `${S.pp}/${TUNE.overflow}${S.pp>=70?' ⚠️':''}`; bar('p-pp', S.pp, TUNE.overflow); $('p-pp-bar').classList.toggle('hot', S.pp>=70);
+  const tc = TUNE.tactics[S.tactic]; $('t-name').textContent = tc.name; $('t-desc').textContent = tc.desc;
+  $('f-auto').classList.toggle('dead', S.auto<=0);
+}
+function setLog(html){ $('log').innerHTML = html; }
+function hit(fid){ const f=$(fid); f.classList.remove('hit'); void f.offsetWidth; f.classList.add('hit'); }
+function flash(){ const x=document.createElement('div'); x.className='flash'; $('stage').appendChild(x); setTimeout(()=>x.remove(),600); }
+// ===== コマンド =====
+let armedAt = 0;
+function armCmds(){
+  const c = TUNE.cmd, g = $('cmds'); g.innerHTML='';
+  const items = [
+    ['atk',  `攻撃 ${c.atk.dmg}`, `圧+${c.atk.pp}`],
+    ['grd',  `防御`, `次の被害を半分・圧+${c.grd.pp}`],
+    ['smash',`強打 ${Math.round(c.smash.base + c.smash.rate*S.pp)}`, `圧-${-c.smash.pp}（圧${c.smash.need}以上）`],
+    ['heat', `過熱`, `敵の圧+${c.heat.epp}・圧-${-c.heat.pp}（圧${c.heat.need}以上）`],
+    ['vent', `放圧 VENT`, `全員HP+${Math.round(c.vent.healRate*S.pp)}・圧を0へ`],
+  ];
+  for (const [k,l,s] of items){
+    const b = document.createElement('button'); b.className='cmd'+(k==='vent'?' vent':k==='heat'?' heat':'');
+    b.innerHTML = `<b>${l}</b><small>${s}</small>`;
+    b.disabled = S.over || S.pp < c[k].need;
+    b.onclick = () => act(k);
+    g.appendChild(b);
+  }
+  armedAt = performance.now();
+}
+function partyDmgTo(enemy, raw){ const v = Math.max(1, raw - enemy.def.armor); return v; }
+function act(k){
+  if (S.over) return;
+  const c = TUNE.cmd[k], e = S.e, d = e.def;
+  const rec = { b:S.bi, e:d.id, turn:++S.turn, ppBefore:S.pp, epp:e.pp, cmd:c.name, tactic:TUNE.tactics[S.tactic].key, think:Math.round(performance.now()-armedAt) };
+  REC.turns.push(rec); REC.dmg[d.id].turns++;
+  let msg = '';
+  // --- 主人公 ---
+  if (k==='atk'){ const v=partyDmgTo(e,c.dmg); e.hp-=v; REC.dmg[d.id].hit+=v; S.pp+=c.pp; msg+=`攻撃 <b>${v}</b>。`; hit('f-enemy'); }
+  else if (k==='grd'){ S.guard=true; S.pp+=c.pp; msg+=`防御の構え。`; }
+  else if (k==='smash'){ const v=partyDmgTo(e, Math.round(c.base+c.rate*S.pp)); e.hp-=v; REC.dmg[d.id].hit+=v; S.pp+=c.pp; msg+=`強打 <b>${v}</b>！`; hit('f-enemy'); }
+  else if (k==='heat'){ const v=partyDmgTo(e,c.dmg); e.hp-=v; REC.dmg[d.id].hit+=v; e.pp+=c.epp; S.pp+=c.pp; msg+=`過熱＝敵の圧+${c.epp}（${v}）。`; }
+  else if (k==='vent'){ const h=Math.round(c.healRate*S.pp); S.hero=Math.min(TUNE.hero.hp,S.hero+h); if(S.auto>0) S.auto=Math.min(TUNE.auto.hp,S.auto+h); S.pp=0; msg+=`放圧＝全員HP+${h}。`; }
+  msg += checkEnemyBurst();
+  msg += checkPartyBurst();
+  // --- 自動人形 ---
+  let autoGuard = false;
+  if (S.auto>0 && !S.skipNow && e.hp>0){
+    const t = TUNE.tactics[S.tactic].key;
+    if (t==='tank'){ autoGuard=true; S.pp+=TUNE.autoAtk.pp; msg+=` 人形はかばう。`; }
+    else if (t==='dps'){ if (S.pp>=TUNE.autoSmash.need){ const v=partyDmgTo(e,Math.round(TUNE.autoSmash.base+TUNE.autoSmash.rate*S.pp)); e.hp-=v; REC.dmg[d.id].hit+=v; S.pp+=TUNE.autoSmash.pp; msg+=` 人形の強打 <b>${v}</b>。`; } else { const v=partyDmgTo(e,TUNE.autoAtk.dmg); e.hp-=v; REC.dmg[d.id].hit+=v; S.pp+=TUNE.autoAtk.pp; msg+=` 人形の攻撃 ${v}。`; } hit('f-enemy'); }
+    else if (t==='heal'){ if (S.pp>=TUNE.autoVent.need){ const h=Math.round(TUNE.autoVent.healRate*S.pp); S.hero=Math.min(TUNE.hero.hp,S.hero+h); S.auto=Math.min(TUNE.auto.hp,S.auto+h); S.pp=0; msg+=` 人形の放圧＝HP+${h}。`; } else { const v=partyDmgTo(e,TUNE.autoWeak.dmg); e.hp-=v; REC.dmg[d.id].hit+=v; S.pp+=TUNE.autoWeak.pp; msg+=` 人形の弱攻撃 ${v}。`; hit('f-enemy'); } }
+    msg += checkEnemyBurst();
+    msg += checkPartyBurst();
+  }
+  S.skipNow = false;
+  if (e.hp<=0){ e.hp=0; render(); setLog(msg+` <b>${d.name}を倒した！</b>`); S.over=true; armCmds(); setTimeout(()=>afterBattle(true), 700); return; }
+  // --- 敵 ---
+  msg += enemyAct(autoGuard);
+  if (S.skip){ S.skip=false; S.skipNow=true; msg += ` <span class="warn">暴発の反動＝次のターンは動けない。</span>`; }
+  render(); setLog(msg);
+  if (S.hero<=0){ S.hero=0; render(); S.over=true; armCmds(); setTimeout(()=>afterBattle(false), 700); return; }
+  if (S.skipNow){ // 味方の行動不能ターン＝敵だけ動く
+    S.over=true; armCmds();
+    setTimeout(()=>{ let m = enemyAct(false); S.skipNow=false; S.over=false; render(); setLog(`<span class="warn">動けない…</span> `+m); if (S.hero<=0){S.hero=0;render();S.over=true;armCmds();setTimeout(()=>afterBattle(false),700);} else armCmds(); }, 900);
+    return;
+  }
+  armCmds();
+}
+function checkEnemyBurst(){
+  const e=S.e, d=e.def;
+  if (e.pp >= TUNE.overflow && e.hp>0){ e.pp = 0; e.hp -= d.burst.dmg; REC.dmg[d.id].burst += d.burst.dmg; REC.burstsE++; e.skip = true; flash(); hit('f-enemy'); return ` <span class="warn">敵が暴発！ ${d.burst.dmg} ダメージ・1回休み。</span>`; }
+  return '';
+}
+function checkPartyBurst(){
+  if (S.pp >= TUNE.overflow){ S.pp = TUNE.burst.resetTo; S.hero -= TUNE.burst.selfDmg; if (S.auto>0) S.auto -= TUNE.burst.selfDmg; if (S.auto<0) S.auto=0; S.skip = true; REC.burstsP++; flash(); hit('f-hero'); hit('f-auto'); return ` <span class="warn">味方が暴発！ 全員 ${TUNE.burst.selfDmg} ダメージ。</span>`; }
+  return '';
+}
+function enemyAct(autoGuard){
+  const e=S.e, d=e.def; let m='';
+  if (e.skip){ e.skip=false; return ' 敵は反動で動けない。'; }
+  if (d.vent && e.pp >= d.vent.need){ e.pp=0; e.hp=Math.min(d.hp, e.hp+d.vent.heal); return ` 敵は放圧＝HP+${d.vent.heal}。`; }
+  let dmg, name;
+  if (d.big && e.pp >= d.big.need){ dmg=d.big.dmg; name=d.big.name; e.pp -= d.big.need; }
+  else { dmg=d.atk; name='攻撃'; e.pp += d.ppGain; }
+  const isBig = (d.big && name.startsWith(d.big.name));
+  if (S.guard){ dmg = Math.ceil(dmg/2); S.guard=false; name += '（防御で半減）'; }
+  if (isBig){ // 大技は全体攻撃＝かばえない（人形がかばう型なら人形の被害だけ6割）
+    S.hero -= dmg; hit('f-hero'); m += ` 敵の${name} <b>${dmg}</b>＝全員に。`;
+    if (S.auto>0){ const ad = autoGuard ? Math.ceil(dmg*TUNE.tankRate) : dmg; S.auto -= ad; hit('f-auto'); if (S.auto<=0){ S.auto=0; m += ' <span class="warn">人形が壊れた（設計図は残る）。</span>'; } }
+  }
+  else if (autoGuard && S.auto>0){ dmg = Math.ceil(dmg*TUNE.tankRate); S.auto -= dmg; hit('f-auto'); m += ` 敵の${name} ${dmg} → 人形がかばった。`; if (S.auto<=0){ S.auto=0; m += ' <span class="warn">人形が壊れた（設計図は残る）。</span>'; } }
+  else { S.hero -= dmg; hit('f-hero'); m += ` 敵の${name} <b>${dmg}</b>。`; }
+  // 蒸気を浴びせる（B）＝通常攻撃のたびに味方の圧が上がる。防御・かばうでは防げない（p0-0.2.0）
+  if (!isBig && d.steam){ S.pp += d.steam; REC.steam++; m += ` <span class="warn">蒸気を浴びた＝味方の圧+${d.steam}。</span>`; if (S.pp >= TUNE.overflow) m += checkPartyBurst(); }
+  // 敵の圧が溢れる（自分で溜めすぎ）
+  if (e.pp >= TUNE.overflow){ m += checkEnemyBurst(); }
+  return m;
+}
+function afterBattle(win){
+  const d = S.e.def; const bt = REC.dmg[d.id];
+  REC.battles.push({ id:d.id, win, turns:bt.turns, hit:bt.hit, burst:bt.burst, sec:Math.round((Date.now()-bt.start)/1000) });
+  if (!win){ REC.result = `敗北（${d.name}）`; showResult(); return; }
+  S.bi++;
+  if (S.bi >= TUNE.enemies.length){ REC.result = '勝利（3体撃破）'; showResult(); return; }
+  S.hero = Math.min(TUNE.hero.hp, S.hero + TUNE.restHeal); if (S.auto>0) S.auto = Math.min(TUNE.auto.hp, S.auto + TUNE.restHeal);
+  const n = TUNE.enemies[S.bi];
+  $('i-title').textContent = `${d.name} を倒した`;
+  $('i-body').innerHTML = `<p>小休止＝HP+${TUNE.restHeal}。${S.pp < TUNE.startPP ? `圧は ${S.pp} → 開幕の下限 ${TUNE.startPP} まで補充して次へ。` : `圧は ${S.pp} のまま持ち越し。`}</p><p>次の敵＝<b>${n.name}</b>（${n.trait}）</p>`;
+  S.over=false; show('s-inter');
+}
+// ===== 結果 =====
+function summarize(){
+  const T = REC.turns, n = T.length;
+  const dist = {}; T.forEach(t=>dist[t.cmd]=(dist[t.cmd]||0)+1);
+  let same=0; for (let i=1;i<n;i++) if (T[i].cmd===T[i-1].cmd) same++;
+  const rep = n>1 ? Math.round(same/(n-1)*100) : 0;
+  let sw=0; for (let i=1;i<n;i++) if (T[i].tactic!==T[i-1].tactic) sw++;
+  const think = n ? Math.round(T.reduce((a,t)=>a+t.think,0)/n) : 0;
+  const thinkMed = n ? T.map(t=>t.think).sort((a,b)=>a-b)[Math.floor(n/2)] : 0;
+  return { n, dist, rep, sw, think, thinkMed };
+}
+function showResult(){
+  const s = summarize();
+  let h = `<p><b>${REC.result}</b>　総ターン ${s.n}　所要 ${Math.round((Date.now()-REC.start)/1000)} 秒</p>`;
+  h += `<table><tr><th>敵</th><th>勝敗</th><th>ターン</th><th>攻撃で削った</th><th>暴発で削った</th></tr>`;
+  REC.battles.forEach(b=>{ h += `<tr><td>${b.id}</td><td>${b.win?'勝':'負'}</td><td>${b.turns}</td><td>${b.hit}</td><td>${b.burst}</td></tr>`; });
+  h += `</table>`;
+  h += `<p>コマンドの分布＝${Object.entries(s.dist).map(([k,v])=>`${k}${v}`).join('・')}</p>`;
+  h += `<p>連打率（直前と同じコマンド）＝<b>${s.rep}%</b>　作戦の切替＝${s.sw}回</p>`;
+  h += `<p>1手の考える時間＝平均 <b>${(s.think/1000).toFixed(1)}秒</b>・中央値 ${(s.thinkMed/1000).toFixed(1)}秒</p>`;
+  h += `<p>暴発＝味方 ${REC.burstsP}回・敵 ${REC.burstsE}回　蒸気を浴びた ${REC.steam}回</p>`;
+  $('r-table').innerHTML = h;
+  document.querySelectorAll('#qs button').forEach(b=>b.classList.remove('sel'));
+  REC.q = {}; buildOut(); show('s-result');
+}
+function buildOut(){
+  const s = summarize();
+  const L = [];
+  L.push(`[OVERPRESSURE Phase 0] ${VER} ${new Date().toLocaleString('ja-JP')}`);
+  L.push(`[環境] ${window.navigator.standalone?'ホーム画面':'ブラウザ'} / 窓 ${innerWidth}x${innerHeight} / dpr ${devicePixelRatio} / ${location.protocol}`);
+  L.push(`[結果] ${REC.result} / 総ターン ${s.n} / 所要 ${Math.round((Date.now()-REC.start)/1000)}秒`);
+  REC.battles.forEach(b=>L.push(`[敵${b.id}] ${b.win?'勝':'負'} ターン${b.turns} 攻撃で${b.hit} 暴発で${b.burst} ${b.sec}秒`));
+  L.push(`[分布] ${Object.entries(s.dist).map(([k,v])=>`${k}${v}`).join(' ')}`);
+  L.push(`[連打率] ${s.rep}% / 作戦切替 ${s.sw}回 / 考える時間 平均${(s.think/1000).toFixed(1)}s 中央値${(s.thinkMed/1000).toFixed(1)}s`);
+  L.push(`[暴発] 味方${REC.burstsP} 敵${REC.burstsE} / 蒸気を浴びた ${REC.steam}回`);
+  L.push(`[Q1 迷い] ${REC.q.q1||'未回答'} / [Q2 敵ごと] ${REC.q.q2||'未回答'} / [Q3 もう1回] ${REC.q.q3||'未回答'}`);
+  L.push(`[手順] ` + REC.turns.map(t=>`${t.e}${t.turn}:${t.cmd.slice(0,2)}@${t.ppBefore}/${t.epp}${t.tactic[0]}`).join(' '));
+  $('out').value = L.join('\n');
+}
+document.querySelectorAll('#qs button').forEach(b=>b.addEventListener('click', ()=>{
+  REC.q[b.dataset.q] = b.dataset.v;
+  document.querySelectorAll(`#qs button[data-q="${b.dataset.q}"]`).forEach(x=>x.classList.remove('sel')); b.classList.add('sel'); buildOut();
+}));
+$('b-copy').addEventListener('click', ()=>{ buildOut(); const o=$('out'); o.focus(); o.select(); const t=o.value;
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(()=>{$('b-copy').textContent='コピーしました';}).catch(()=>{$('b-copy').textContent='選択→手動コピー';}); else $('b-copy').textContent='選択→手動コピー'; });
+$('b-start').addEventListener('click', newRun);
+$('b-again').addEventListener('click', ()=>{ $('b-copy').textContent='結果をコピー'; newRun(); });
+$('b-next').addEventListener('click', startBattle);
+$('b-tactic').addEventListener('click', ()=>{ if (S.over) return; S.tactic=(S.tactic+1)%TUNE.tactics.length; REC.tacticSwitch++; render(); });
+$('ver').textContent = '　' + VER;
+window.OP = { get S(){return S;}, get REC(){return REC;}, TUNE, act, newRun, startBattle, summarize };
+</script>
+</body>
+</html>
