@@ -119,10 +119,10 @@
     </div>
     <div class="box">
       <h2>ルール</h2>
-      <p>マップの<b>光っているノード</b>を選んで進む。先は全部見える（敵の種類・<b>敵の開幕の圧</b>・宝の中身）。9個目がボス。<b>ボスを倒すと次のフロア（新しい地図・別の敵）へ。2フロアで1ラン。</b></p>
+      <p>マップの<b>光っているノード</b>を選んで進む。先は全部見える（敵の種類・<b>敵の開幕の圧</b>・宝の中身）。<b>同じ層に並ぶ戦闘は敵の種類が違う</b>＝連れている人形に合う相手を選べる。9個目がボス。<b>ボスを倒すと次のフロア（新しい地図・別の敵）へ。2フロアで1ラン。</b></p>
       <p><b>敵は種類ごとに圧の性質が違う</b>（画面の1行と「次:」を見て攻め方を変える）。<b>宝はそのランだけ効く物</b>（持ち帰れない）。</p>
-      <p><b>人形は種類で役割が決まる</b>（盾型＝かばう／砲手型＝撃つ／放圧手＝逃がす／焚き手＝過熱）。戦闘中に切り替えられるのは<b>性格（積極／慎重）</b>＝技を使う早さ。部屋で解体→製造すれば乗り換えられる。設計図は強敵・ボス・工房で増える。</p>
-      <p><b>勝てば</b>金と素材を持ち帰る。<b>主人公が倒れると</b>そのランの金を失い、素材と拾った設計図だけ持ち帰る。人形は壊れるが<b>設計図は残る</b>。</p>
+      <p><b>人形は種類で役割が決まる</b>（盾型＝かばう／砲手型＝撃つ／放圧手＝逃がす／焚き手＝過熱）。<b>2体まで連れて出て、戦闘の直前に「誰を出す」を選ぶ</b>（控えは被害を受けない）。<b>人形の技は主人公が「使う」（強打・過熱・大過熱・放圧）を選んだターンにだけ出る</b>＝いつ使うかは主人公が決める。戦闘中に切り替えられるのは<b>性格（積極／慎重）</b>＝技に要る圧の高さ。部屋で解体→製造すれば乗り換えられる。設計図は強敵・ボス・工房で増える。</p>
+      <p><b>勝てば</b>金と素材と生き残った人形を持ち帰る。<b>主人公が倒れると</b>そのランの金を失い、素材と拾った設計図だけ持ち帰る。人形は2体とも壊れるが<b>設計図は残る</b>。</p>
       <p>ノードに着くたび自動保存。閉じても「続きから」でマップに戻る（戦闘の途中は保存しない）。</p>
       <p class="dim">ランが終わると結果画面が出るので「コピー」してサイファへ。</p>
     </div>
@@ -176,6 +176,15 @@
     </div>
     <div class="cmdgrid" id="cmds"></div>
   </div>
+</section>
+
+<!-- ===== 誰を出す（p2-0.3.0・b） ===== -->
+<section class="scr" id="s-pick">
+  <h2>誰を出す</h2>
+  <div class="box" id="pk-enemy"></div>
+  <button class="big" id="b-pk-0"></button>
+  <button class="big" id="b-pk-1"></button>
+  <p class="dim">控えは被害を受けない。性格は戦闘中に切り替えられる。人形の技は主人公が「使う」を選んだターンにだけ出る。</p>
 </section>
 
 <!-- ===== 戦闘後 ===== -->
@@ -240,7 +249,7 @@
 </div>
 <script>
 'use strict';
-const VER = 'p2-0.2.0';
+const VER = 'p2-0.3.0';
 // ===== 調整値（すべて仮置き＝実機の感触で動かす）=====
 const TUNE = {
   hero:{hp:100}, overflow:100,
@@ -256,12 +265,14 @@ const TUNE = {
     vent: {name:'放圧', kind:'逃がす', healRate:0.3, need:1},
   },
   // 人形＝役割固定（#10・問3 a）。作戦＝性格（積極／慎重）＝技を使う閾値
+  // p2-0.3.0＝③同期＝人形の技は「主人公が使う（強打・過熱・大過熱・放圧）を選んだターン」にだけ発火する（閾値の数値は据え置き）。溜めるターンは人形も溜める（攻撃／弱攻撃＝圧+10）
   autos:[
     {id:'shield', name:'盾型',  role:'かばう', hp:70, desc:{bold:'敵の攻撃を受け（被害6割）弱攻撃6・圧+10', calm:'敵の攻撃を受ける（被害6割）・圧+15'}},
-    {id:'cannon', name:'砲手型', role:'撃つ',   hp:55, need:{bold:40, calm:60}, desc:'圧{need}以上で強打（圧-40）。それ以外は攻撃（圧+10）'},
-    {id:'venter', name:'放圧手', role:'逃がす', hp:55, need:{bold:50, calm:75}, desc:'圧{need}以上で放圧（回復・圧0）。それ以外は弱攻撃（圧+10）'},
-    {id:'stoker', name:'焚き手', role:'過熱',   hp:55, need:{bold:20, calm:45}, desc:'圧{need}以上で過熱（敵の圧+20・圧-15）。それ以外は攻撃（圧+10）'},
+    {id:'cannon', name:'砲手型', role:'撃つ',   hp:55, need:{bold:40, calm:60}, desc:'主人公が使うターンに圧{need}以上なら強打（圧-40）。それ以外は攻撃（圧+10）'},
+    {id:'venter', name:'放圧手', role:'逃がす', hp:55, need:{bold:50, calm:75}, desc:'主人公が使うターンに圧{need}以上なら放圧（回復・圧0）。それ以外は弱攻撃（圧+10）'},
+    {id:'stoker', name:'焚き手', role:'過熱',   hp:55, need:{bold:20, calm:45}, desc:'主人公が使うターンに圧{need}以上なら過熱（敵の圧+20・圧-15）。それ以外は攻撃（圧+10）'},
   ],
+  partySize:2,   // p2-0.3.0＝b＝2体まで連れて出て、戦闘の直前に「誰を出す」を選ぶ（控えは被害を受けない）
   moods:[{key:'bold', name:'積極'}, {key:'calm', name:'慎重'}],
   tankRate:0.6, autoAtk:{dmg:8, pp:+10}, autoWeak:{dmg:6, pp:+10}, autoSmash:{base:15, rate:0.3, pp:-40}, autoVent:{healRate:0.3}, autoHeat:{dmg:3, epp:+20, pp:-15}, shieldCalmPP:15,
   // 敵＝圧の性質1行（R21）。A・B・A2 は Phase 0 の計器のまま。C〜G は Phase 2 の新規（武器で消えない性質＝反撃・回復・吸圧・重い砲）
@@ -310,18 +321,25 @@ const BONUS0 = () => ({atk:0, armor:0, ovf:0, heat:0, start:0});
 const BON = () => (RUN && RUN.bonus) ? RUN.bonus : BONUS0();
 const OVF = () => TUNE.overflow + (RUN ? RUN.ovf : 0) + BON().ovf;          // 味方の溢れ値（休憩「増圧」・宝「安全弁」で上がる）
 const WPN = () => (RUN ? RUN.weapon : META.weapon) * TUNE.room.weapon.dmgPer + BON().atk;   // 武器の段階×+3 ＋ 宝「予備の歯車」
-const AUTO = () => TUNE.autos.find(a=>a.id===(RUN ? RUN.autoType : META.autoType)) || null;
+const DEF = id => TUNE.autos.find(a=>a.id===id) || null;
+const ACT = () => (RUN && RUN.party && RUN.active>=0) ? RUN.party[RUN.active] : null;          // 出している人形（ラン中）
+const AUTO = () => { const m = ACT(); return m ? DEF(m.type) : null; };
+const aliveParty = () => (RUN && RUN.party) ? RUN.party.map((m,i)=>({m,i})).filter(x=>x.m && x.m.hp>0) : [];
+const healParty = h => { if (!RUN || !RUN.party) return; RUN.party.forEach(m=>{ if (m && m.hp>0) m.hp = Math.min(DEF(m.type).hp, h==null ? DEF(m.type).hp : m.hp + h); }); };   // h=null＝全快
+const partyText = (party, withHp) => { const xs = (party||[]).map(m => m ? (withHp ? `${DEF(m.type).name}${m.hp>0?` ${m.hp}/${DEF(m.type).hp}`:'（壊れた）'}` : DEF(m.type).name) : null).filter(Boolean); return xs.length ? xs.join('・') : 'なし'; };
 const ENEMY = id => TUNE.enemies.find(e=>e.id===id);
 const ITEM = id => TUNE.treasure.find(t=>t.id===id);
 const cur = () => RUN.map[RUN.li][RUN.ii];
-function newMeta(){ return { gold:0, mat:0, weapon:0, autoAlive:true, autoType:'shield', blueprints:TUNE.blueprint.start.slice(), ext:{}, runs:0, wins:0 }; }
-function newRec(){ return { ver:VER, t:{map:0,battle:0,other:0}, picks:[], choices:[], battles:[], bt:null, turns:[], burstsP:0, burstsE:0, steam:0, drained:0, countered:0, moodSwitch:0, items:[], bpFound:[], q:{}, take:null, floors:[] }; }
+function newMeta(){ return { gold:0, mat:0, weapon:0, party:['shield', null], blueprints:TUNE.blueprint.start.slice(), ext:{}, runs:0, wins:0 }; }
+function newRec(){ return { ver:VER, t:{map:0,battle:0,other:0}, picks:[], choices:[], battles:[], bt:null, turns:[], burstsP:0, burstsE:0, steam:0, drained:0, countered:0, moodSwitch:0, items:[], bpFound:[], q:{}, take:null, floors:[], autoPicks:[] }; }
 function saveMeta(){ try{ localStorage.setItem(KEY_META, JSON.stringify(META)); }catch(e){} }
 function saveRun(){ try{ if (RUN) localStorage.setItem(KEY_RUN, JSON.stringify(RUN)); else localStorage.removeItem(KEY_RUN); }catch(e){} }
-function migrateMeta(m){   // Phase 1 の記録を引き継ぐ（人形「汎用」→盾型・設計図＝盾型＋砲手型）
+function migrateMeta(m){   // Phase 1 の記録を引き継ぐ（人形「汎用」→盾型・設計図＝盾型＋砲手型）。p2-0.3.0＝1体（autoType）→枠2（party）
   if (!m.blueprints) m.blueprints = TUNE.blueprint.start.slice();
-  if (m.autoType === undefined) m.autoType = m.autoAlive ? 'shield' : null;
-  if (!m.autoAlive) m.autoType = null;
+  if (!m.party){ const t = (m.autoType === undefined) ? (m.autoAlive ? 'shield' : null) : (m.autoAlive ? m.autoType : null); m.party = [t || null, null]; }
+  while (m.party.length < TUNE.partySize) m.party.push(null);
+  m.party = m.party.map(id => (id && DEF(id)) ? id : null);
+  delete m.autoAlive; delete m.autoType;
   if (!m.ext) m.ext = {};
   return m;
 }
@@ -363,6 +381,8 @@ function genMap(seed, floor){
     const nodes = types.slice(0,w).map((type,i)=>makeNode(type, li, i, R, floor));
     // 同じ層に「同じ敵・同じ開幕の圧」の戦闘や「同じ中身の宝」が並ぶと選ぶ意味が無い＝5回まで引き直す
     nodes.forEach((n,i)=>{ for (let k=0; k<5; k++){ const dup = nodes.some((m,j)=>j<i && m.type===n.type && ((n.type==='fight'||n.type==='elite') ? (m.enemy===n.enemy && m.pp0===n.pp0) : n.type==='treasure' ? m.item===n.item : false)); if (!dup) break; Object.assign(n, makeNode(n.type, li, i, R, floor)); } });
+    // p2-0.3.0＝a＝同じ層に並ぶ通常戦闘は敵の種類を必ず違える（経路で天敵を避けられるように。プールは各フロア3種＝幅3まで全部違う）
+    if (pool.includes('fight')){ const order = shuffle((TUNE.pools[floor]||TUNE.pools[1]).fight, R); let k=0; nodes.forEach(n=>{ if (n.type==='fight'){ n.enemy = order[k % order.length]; k++; } }); }
     layers.push(nodes);
   });
   layers.push([makeNode('boss', layers.length, 0, R, floor)]);
@@ -399,15 +419,16 @@ const nodeTag = n => nodeLabel(n).join('');
 // ===== 部屋 =====
 function renderRoom(){
   const inRun = !!RUN && !RUN.done;
-  const a = AUTO();
+  const names = META.party.filter(Boolean).map(id=>DEF(id).name);
   $('m-gold').textContent = META.gold; $('m-mat').textContent = META.mat; $('m-wpn').textContent = `段階${META.weapon}`;
-  $('m-auto').textContent = (META.autoAlive && a) ? a.name : 'なし'; $('m-runs').textContent = `${META.runs}回（勝${META.wins}）`;
-  $('b-sortie').textContent = inRun ? (RUN.li<0 ? `続きから（フロア${RUN.floor}・出発前）` : `続きから（フロア${RUN.floor}・ノード${RUN.li+1}／${RUN.map.length}）`) : (META.autoAlive ? `出撃する（${a?a.name:'人形'}）` : '出撃する（人形なし）');
-  // 製造台＝所持する設計図から選ぶ・人形がいれば解体で乗り換え
-  $('x-make-note').textContent = (META.autoAlive && a) ? `人形は製造済み（${a.name}＝${a.role}）。乗り換えるには解体（素材+${TUNE.blueprint.scrapMat}）` : `設計図から選んで素材${TUNE.room.make.mat}で製造（所持 素材${META.mat}）`;
+  $('m-auto').textContent = names.length ? names.join('・') : 'なし'; $('m-runs').textContent = `${META.runs}回（勝${META.wins}）`;
+  $('b-sortie').textContent = inRun ? (RUN.li<0 ? `続きから（フロア${RUN.floor}・出発前）` : `続きから（フロア${RUN.floor}・ノード${RUN.li+1}／${RUN.map.length}）`) : (names.length ? `出撃する（${names.join('＋')}）` : '出撃する（人形なし）');
+  // 製造台＝枠2。所持する設計図から選んで空いた枠に製造・枠ごとに解体で乗り換え（p2-0.3.0）
+  const empty = META.party.findIndex(id=>!id);
+  $('x-make-note').textContent = `枠${TUNE.partySize}＝2体まで連れて出て、戦闘の直前に「誰を出す」を選ぶ（控えは被害を受けない）。製造＝素材${TUNE.room.make.mat}／解体＝素材+${TUNE.blueprint.scrapMat}（所持 素材${META.mat}）`;
   let mk = '';
-  if (META.autoAlive && a) mk += `<div class="ext"><div>${a.name}<small>${a.role}・HP${a.hp}</small></div><button id="b-scrap" ${inRun?'disabled':''}>解体</button></div>`;
-  else META.blueprints.forEach(id=>{ const b=TUNE.autos.find(x=>x.id===id); mk += `<div class="ext"><div>${b.name}<small>${b.role}・HP${b.hp}＝素材${TUNE.room.make.mat}</small></div><button data-make="${id}" ${(META.mat<TUNE.room.make.mat||inRun)?'disabled':''}>製造</button></div>`; });
+  META.party.forEach((id,i)=>{ if (id){ const b=DEF(id); mk += `<div class="ext"><div>枠${i+1}＝${b.name}<small>${b.role}・HP${b.hp}</small></div><button data-scrap="${i}" ${inRun?'disabled':''}>解体</button></div>`; } else mk += `<div class="ext"><div>枠${i+1}＝空<small>${empty===i?'下の設計図から製造するとここに入る':''}</small></div></div>`; });
+  if (empty>=0) META.blueprints.forEach(id=>{ const b=DEF(id); mk += `<div class="ext"><div>　設計図「${b.name}」<small>${b.role}・HP${b.hp}＝素材${TUNE.room.make.mat}</small></div><button data-make="${id}" ${(META.mat<TUNE.room.make.mat||inRun)?'disabled':''}>製造</button></div>`; });
   $('make-list').innerHTML = mk;
   const lv=META.weapon, costs=TUNE.room.weapon.costs, per=TUNE.room.weapon.dmgPer;
   const h2 = TUNE.cmd.heat2;
@@ -423,21 +444,21 @@ function renderRoom(){
     rest.forEach(b=>{ ex += `<div class="ext"><div>　設計図「${b.name}」<small>${b.role}・HP${b.hp}</small></div><button data-buy="${b.id}" ${(META.gold<TUNE.blueprint.shopCost||inRun)?'disabled':''}>買う</button></div>`; });
   });
   $('ext-list').innerHTML = ex;
-  $('m-note').textContent = inRun ? '遠征中（マップから再開できる）' : (META.autoAlive ? `設計図＝${META.blueprints.map(id=>TUNE.autos.find(x=>x.id===id).name).join('・')}` : '人形がいない。設計図から製造するか、主人公だけで出撃する。');
+  $('m-note').textContent = inRun ? '遠征中（マップから再開できる）' : (names.length ? `設計図＝${META.blueprints.map(id=>DEF(id).name).join('・')}` : '人形がいない。設計図から製造するか、主人公だけで出撃する。');
   document.querySelectorAll('#make-list button[data-make]').forEach(b=>b.addEventListener('click', ()=>makeAuto(b.dataset.make)));
-  const sc = $('b-scrap'); if (sc) sc.addEventListener('click', scrapAuto);
+  document.querySelectorAll('#make-list button[data-scrap]').forEach(b=>b.addEventListener('click', ()=>scrapAuto(+b.dataset.scrap)));
   document.querySelectorAll('#ext-list button[data-ext]').forEach(b=>b.addEventListener('click', ()=>openExt(b.dataset.ext)));
   document.querySelectorAll('#ext-list button[data-buy]').forEach(b=>b.addEventListener('click', ()=>buyBlueprint(b.dataset.buy)));
   show('s-room'); scrEnter(null);
 }
-function makeAuto(id){ if (META.autoAlive || META.mat<TUNE.room.make.mat || !META.blueprints.includes(id) || (RUN&&!RUN.done)) return; META.mat -= TUNE.room.make.mat; META.autoAlive = true; META.autoType = id; saveMeta(); renderRoom(); }
-function scrapAuto(){ if (!META.autoAlive || (RUN&&!RUN.done)) return; META.autoAlive = false; META.autoType = null; META.mat += TUNE.blueprint.scrapMat; saveMeta(); renderRoom(); }
+function makeAuto(id){ const slot = META.party.findIndex(x=>!x); if (slot<0 || META.mat<TUNE.room.make.mat || !META.blueprints.includes(id) || (RUN&&!RUN.done)) return; META.mat -= TUNE.room.make.mat; META.party[slot] = id; saveMeta(); renderRoom(); }
+function scrapAuto(i){ if (!META.party[i] || (RUN&&!RUN.done)) return; META.party[i] = null; META.mat += TUNE.blueprint.scrapMat; saveMeta(); renderRoom(); }
 function openExt(id){ const x=TUNE.room.ext.find(e=>e.id===id); if (!x || !x.impl || META.ext[id] || META.gold<x.cost || (RUN&&!RUN.done)) return; META.gold -= x.cost; META.ext[id]=true; saveMeta(); renderRoom(); }
 function buyBlueprint(id){ if (!META.ext.workshop || META.blueprints.includes(id) || META.gold<TUNE.blueprint.shopCost || (RUN&&!RUN.done)) return; META.gold -= TUNE.blueprint.shopCost; META.blueprints.push(id); saveMeta(); renderRoom(); }
 function newRun(){
   const seed = ((Date.now() & 0xffffffff) ^ Math.floor(Math.random()*0x7fffffff)) >>> 0;
-  const a = META.autoAlive ? TUNE.autos.find(x=>x.id===META.autoType) : null;
-  RUN = { ver:VER, seed, floor:1, map:genMap(floorSeed(seed,1),1), li:-1, ii:-1, pending:false, hero:TUNE.hero.hp, autoType:a?a.id:null, auto:a?a.hp:0, pp:0, ovf:0, bonus:BONUS0(), items:[], bpFound:[], gold:0, mat:0, weapon:META.weapon, mood:0, path:[], done:false, result:'', autoBrokeAt:null, resumed:0 };
+  const party = META.party.map(id => id ? { type:id, hp:DEF(id).hp, mood:0, brokeAt:null } : null);
+  RUN = { ver:VER, seed, floor:1, map:genMap(floorSeed(seed,1),1), li:-1, ii:-1, pending:false, hero:TUNE.hero.hp, party, active:-1, pp:0, ovf:0, bonus:BONUS0(), items:[], bpFound:[], gold:0, mat:0, weapon:META.weapon, path:[], done:false, result:'', resumed:0 };
   REC = newRec(); RUN.rec = REC;
   saveRun(); showMap();
 }
@@ -451,7 +472,7 @@ function reachable(){
 function autoMaxHp(){ const a=AUTO(); return a ? a.hp : 0; }
 function showMap(){
   show('s-map'); scrEnter('map');
-  $('mp-h').textContent = `${RUN.hero}/${TUNE.hero.hp}`; $('mp-a').textContent = RUN.auto>0 ? `${AUTO().name} ${RUN.auto}/${autoMaxHp()}` : 'なし';
+  $('mp-h').textContent = `${RUN.hero}/${TUNE.hero.hp}`; $('mp-a').textContent = partyText(RUN.party, true);
   $('mp-pp').textContent = `${RUN.pp}/${OVF()}`; $('mp-g').textContent = RUN.gold; $('mp-m').textContent = RUN.mat;
   const bon = RUN.items.length ? `・宝＝${RUN.items.map(id=>ITEM(id).short).join(' ')}` : '';
   $('mp-hint').textContent = `フロア ${RUN.floor}／${TUNE.floors}＝光るノードを選ぶ（上がボス${RUN.floor<TUNE.floors?'＝倒すと次のフロアへ':'＝最後'}）${bon}`;
@@ -495,7 +516,7 @@ function pickNode(li,i){
   resolveNode(n);
 }
 function resolveNode(n){
-  if (n.type==='fight'||n.type==='elite'||n.type==='boss') startBattle(n);
+  if (n.type==='fight'||n.type==='elite'||n.type==='boss') preBattle(n);
   else if (n.type==='treasure') showTreasure(n);
   else if (n.type==='event') showEvent(n);
   else if (n.type==='rest') showRest(n);
@@ -505,7 +526,7 @@ function nodeDone(){ const n=cur(); n.done=true; RUN.pending=false; saveRun(); s
 function applyItem(it){
   const b = RUN.bonus;
   if (it.atk) b.atk += it.atk; if (it.armor) b.armor += it.armor; if (it.ovf) b.ovf += it.ovf; if (it.heat) b.heat += it.heat; if (it.start) b.start += it.start;
-  if (it.heal){ RUN.hero = TUNE.hero.hp; if (RUN.auto>0) RUN.auto = autoMaxHp(); }
+  if (it.heal){ RUN.hero = TUNE.hero.hp; healParty(null); }
   RUN.items.push(it.id); REC.items.push({ node:`${RUN.floor}-${RUN.li+1}`, id:it.id, short:it.short });
 }
 function showTreasure(n){
@@ -515,7 +536,7 @@ function showTreasure(n){
 }
 function showEvent(n){
   const ev=TUNE.event;
-  $('ev-title').textContent = ev.name; $('ev-body').innerHTML = `<p>${ev.text}</p><p class="dim">主人公 ${RUN.hero}/${TUNE.hero.hp}・人形 ${RUN.auto>0?RUN.auto+'/'+autoMaxHp():'なし'}</p>`;
+  $('ev-title').textContent = ev.name; $('ev-body').innerHTML = `<p>${ev.text}</p><p class="dim">主人公 ${RUN.hero}/${TUNE.hero.hp}・人形 ${partyText(RUN.party, true)}</p>`;
   $('b-ev-a').innerHTML = `<b>${ev.a.label}</b><small>金+${ev.a.gold}・主人公HP${ev.a.hp}</small>`;
   $('b-ev-b').innerHTML = `<b>${ev.b.label}</b><small>全員HP+${ev.b.heal}</small>`;
   show('s-event'); scrEnter('other'); choiceShownAt = performance.now();
@@ -523,18 +544,18 @@ function showEvent(n){
 function evPick(which){
   const ev=TUNE.event;
   if (which==='a'){ RUN.gold += ev.a.gold; RUN.hero = Math.max(1, RUN.hero + ev.a.hp); }
-  else { RUN.hero = Math.min(TUNE.hero.hp, RUN.hero + ev.b.heal); if (RUN.auto>0) RUN.auto = Math.min(autoMaxHp(), RUN.auto + ev.b.heal); }
+  else { RUN.hero = Math.min(TUNE.hero.hp, RUN.hero + ev.b.heal); healParty(ev.b.heal); }
   REC.choices.push({ node:`${RUN.floor}-${RUN.li+1}`, kind:'event', pick: which==='a'?ev.a.label:ev.b.label, ms:Math.round(performance.now()-choiceShownAt) });
   nodeDone();
 }
 function showRest(n){
-  $('rs-body').innerHTML = `<p>主人公 ${RUN.hero}/${TUNE.hero.hp}・人形 ${RUN.auto>0?RUN.auto+'/'+autoMaxHp():'壊れている（修理できない・設計図は残る）'}</p><p>味方の溢れ値 ${OVF()}・圧 ${RUN.pp}</p>`;
+  $('rs-body').innerHTML = `<p>主人公 ${RUN.hero}/${TUNE.hero.hp}・人形 ${partyText(RUN.party, true)}${aliveParty().length===0 && RUN.party.some(Boolean)?'（壊れている＝修理できない・設計図は残る）':''}</p><p>味方の溢れ値 ${OVF()}・圧 ${RUN.pp}</p>`;
   $('b-rs-a').innerHTML = `<b>整備</b><small>全員のHPを全快（壊れた人形は戻らない）</small>`;
   $('b-rs-b').innerHTML = `<b>増圧</b><small>このランの溢れ値 +${TUNE.rest.overflowUp}（${OVF()}→${OVF()+TUNE.rest.overflowUp}）</small>`;
   show('s-rest'); scrEnter('other'); choiceShownAt = performance.now();
 }
 function rsPick(which){
-  if (which==='a'){ RUN.hero = TUNE.hero.hp; if (RUN.auto>0) RUN.auto = autoMaxHp(); }
+  if (which==='a'){ RUN.hero = TUNE.hero.hp; healParty(null); }
   else { RUN.ovf += TUNE.rest.overflowUp; }
   REC.choices.push({ node:`${RUN.floor}-${RUN.li+1}`, kind:'rest', pick: which==='a'?'整備':'増圧', ms:Math.round(performance.now()-choiceShownAt) });
   nodeDone();
@@ -542,9 +563,27 @@ function rsPick(which){
 // ===== 戦闘 =====
 const tacticKey = () => { const a=AUTO(); return (a && S.auto>0) ? `${a.id}/${TUNE.moods[S.mood].key}` : '-'; };
 const tacticShort = k => k==='-' ? '-' : ({shield:'s',cannon:'c',venter:'v',stoker:'k'}[k.split('/')[0]]||'?') + (k.endsWith('bold')?'+':'-');
+// p2-0.3.0＝b＝戦闘の直前に「誰を出す」（2体とも動けるときだけ聞く・1体なら自動・0体なら人形なし）
+function preBattle(n){
+  const alive = aliveParty();
+  if (alive.length < 2){ RUN.active = alive.length ? alive[0].i : -1; saveRun(); startBattle(n); return; }
+  const t = ENEMY(n.enemy);
+  $('pk-enemy').innerHTML = `<p><b>${t.name}${n.type==='boss'?'（ボス）':n.type==='elite'?'（強敵）':''}</b>　HP ${t.hp}・開幕の圧 <b>${n.pp0}</b></p><p>性質＝${t.trait}</p><p class="dim">主人公 ${RUN.hero}/${TUNE.hero.hp}・圧 ${RUN.pp}${RUN.items.length?`・宝＝${RUN.items.map(id=>ITEM(id).short).join(' ')}`:''}</p>`;
+  alive.forEach((x,k)=>{ const a = DEF(x.m.type), b = $('b-pk-'+k); b.style.display=''; b.innerHTML = `<b>${a.name}（${a.role}）HP ${x.m.hp}/${a.hp}</b><small>${TUNE.moods[x.m.mood].name}＝${typeof a.desc==='string' ? a.desc.replace('{need}', a.need[TUNE.moods[x.m.mood].key]) : a.desc[TUNE.moods[x.m.mood].key]}</small>`; b.dataset.slot = x.i; });
+  show('s-pick'); scrEnter('other'); choiceShownAt = performance.now();
+}
+function pkPick(k){
+  const b = $('b-pk-'+k); if (!b || b.style.display==='none') return;
+  const slot = +b.dataset.slot, n = cur(), alive = aliveParty();
+  const other = alive.filter(x=>x.i!==slot).map(x=>DEF(x.m.type).name.slice(0,1));
+  RUN.active = slot;
+  REC.autoPicks.push({ node:`${RUN.floor}-${RUN.li+1}`, enemy:n.enemy, pp0:n.pp0, pick:DEF(RUN.party[slot].type).name.slice(0,1), other, ms:Math.round(performance.now()-choiceShownAt) });
+  saveRun(); startBattle(n);
+}
 function startBattle(n){
   const t = ENEMY(n.enemy);
-  S = { hero:RUN.hero, auto:RUN.auto, pp:RUN.pp, mood:RUN.mood||0, e:{def:t, hp:t.hp, pp:n.pp0, skip:false}, turn:0, skip:false, skipNow:false, guard:false, over:false, boss:n.type==='boss', taken:0 };
+  const m = ACT();
+  S = { hero:RUN.hero, auto:m?m.hp:0, pp:RUN.pp, mood:m?(m.mood||0):0, e:{def:t, hp:t.hp, pp:n.pp0, skip:false}, turn:0, skip:false, skipNow:false, guard:false, over:false, boss:n.type==='boss', taken:0 };
   const sp = TUNE.startPP + BON().start; if (S.pp < sp) S.pp = sp;
   REC.bt = { id:t.id, pp0:n.pp0, type:n.type, node:`${RUN.floor}-${RUN.li+1}`, floor:RUN.floor, auto:tacticKey().split('/')[0], hit:0, burst:0, taken:0, turns:0, heat:[], start:performance.now(), win:null };
   $('f-enemy').textContent = t.id; $('f-enemy').className = 'fig enemy' + ((t.id==='B'||t.id==='C'||t.id==='E')?' b':'') + (S.boss?' boss':'');
@@ -629,10 +668,11 @@ function act(k){
   const a = AUTO();
   if (a && S.auto>0 && !S.skipNow && e.hp>0 && S.hero>0){
     const m = TUNE.moods[S.mood].key, need = a.need ? a.need[m] : 0;
+    const useTurn = c.kind !== '溜める';   // ③同期＝人形の技は主人公が「使う／逃がす」を選んだターンにだけ発火する（溜めるターンは人形も溜める）
     if (a.id==='shield'){ autoGuard=true; if (m==='bold'){ const v=partyDmgTo(e,TUNE.autoWeak.dmg); e.hp-=v; bt.hit+=v; S.pp+=TUNE.autoWeak.pp; msg+=` 人形はかばいつつ弱攻撃 ${v}。`; hit('f-enemy'); msg += counterOn('auto'); } else { S.pp+=TUNE.shieldCalmPP; msg+=` 人形はかばう（圧+${TUNE.shieldCalmPP}）。`; } }
-    else if (a.id==='cannon'){ if (S.pp>=need){ const v=partyDmgTo(e,Math.round(TUNE.autoSmash.base+TUNE.autoSmash.rate*S.pp)); e.hp-=v; bt.hit+=v; S.pp+=TUNE.autoSmash.pp; msg+=` 人形の強打 <b>${v}</b>。`; hit('f-enemy'); } else { const v=partyDmgTo(e,TUNE.autoAtk.dmg); e.hp-=v; bt.hit+=v; S.pp+=TUNE.autoAtk.pp; msg+=` 人形の攻撃 ${v}。`; hit('f-enemy'); msg += counterOn('auto'); } }
-    else if (a.id==='venter'){ if (S.pp>=need){ const h=Math.round(TUNE.autoVent.healRate*S.pp); S.hero=Math.min(TUNE.hero.hp,S.hero+h); S.auto=Math.min(autoMaxHp(),S.auto+h); S.pp=0; msg+=` 人形の放圧＝HP+${h}。`; } else { const v=partyDmgTo(e,TUNE.autoWeak.dmg); e.hp-=v; bt.hit+=v; S.pp+=TUNE.autoWeak.pp; msg+=` 人形の弱攻撃 ${v}。`; hit('f-enemy'); msg += counterOn('auto'); } }
-    else if (a.id==='stoker'){ if (S.pp>=need){ const v=partyDmgTo(e,TUNE.autoHeat.dmg); e.hp-=v; bt.hit+=v; e.pp+=TUNE.autoHeat.epp; S.pp+=TUNE.autoHeat.pp; if (S.pp<0) S.pp=0; msg+=` 人形の過熱＝敵の圧+${TUNE.autoHeat.epp}。`; } else { const v=partyDmgTo(e,TUNE.autoAtk.dmg); e.hp-=v; bt.hit+=v; S.pp+=TUNE.autoAtk.pp; msg+=` 人形の攻撃 ${v}。`; hit('f-enemy'); msg += counterOn('auto'); } }
+    else if (a.id==='cannon'){ if (useTurn && S.pp>=need){ const v=partyDmgTo(e,Math.round(TUNE.autoSmash.base+TUNE.autoSmash.rate*S.pp)); e.hp-=v; bt.hit+=v; S.pp+=TUNE.autoSmash.pp; msg+=` 人形の強打 <b>${v}</b>。`; hit('f-enemy'); } else { const v=partyDmgTo(e,TUNE.autoAtk.dmg); e.hp-=v; bt.hit+=v; S.pp+=TUNE.autoAtk.pp; msg+=` 人形の攻撃 ${v}。`; hit('f-enemy'); msg += counterOn('auto'); } }
+    else if (a.id==='venter'){ if (useTurn && S.pp>=need){ const h=Math.round(TUNE.autoVent.healRate*S.pp); S.hero=Math.min(TUNE.hero.hp,S.hero+h); S.auto=Math.min(autoMaxHp(),S.auto+h); S.pp=0; msg+=` 人形の放圧＝HP+${h}。`; } else { const v=partyDmgTo(e,TUNE.autoWeak.dmg); e.hp-=v; bt.hit+=v; S.pp+=TUNE.autoWeak.pp; msg+=` 人形の弱攻撃 ${v}。`; hit('f-enemy'); msg += counterOn('auto'); } }
+    else if (a.id==='stoker'){ if (useTurn && S.pp>=need){ const v=partyDmgTo(e,TUNE.autoHeat.dmg); e.hp-=v; bt.hit+=v; e.pp+=TUNE.autoHeat.epp; S.pp+=TUNE.autoHeat.pp; if (S.pp<0) S.pp=0; msg+=` 人形の過熱＝敵の圧+${TUNE.autoHeat.epp}。`; } else { const v=partyDmgTo(e,TUNE.autoAtk.dmg); e.hp-=v; bt.hit+=v; S.pp+=TUNE.autoAtk.pp; msg+=` 人形の攻撃 ${v}。`; hit('f-enemy'); msg += counterOn('auto'); } }
     msg += checkEnemyBurst();
     msg += checkPartyBurst();
   }
@@ -690,8 +730,9 @@ function dropBlueprint(n){   // 強敵50%・フロア2のボス100%＝未所持�
 }
 function afterBattle(win){
   const bt = REC.bt; bt.win = win; bt.sec = Math.round((performance.now()-bt.start)/1000); REC.battles.push(bt); REC.bt = null;
-  if (RUN.auto>0 && S.auto<=0) RUN.autoBrokeAt = `${RUN.floor}-${RUN.li+1}`;
-  RUN.hero = S.hero; RUN.auto = S.auto; RUN.pp = S.pp; RUN.mood = S.mood;
+  const m = ACT();
+  if (m){ if (m.hp>0 && S.auto<=0) m.brokeAt = `${RUN.floor}-${RUN.li+1}`; m.hp = Math.max(0, S.auto); m.mood = S.mood; }
+  RUN.hero = S.hero; RUN.pp = S.pp;
   if (!win){ endRun(false, S.e.def.name); return; }
   const n = cur();
   const got = dropBlueprint(n);
@@ -700,29 +741,28 @@ function afterBattle(win){
     n.done=true; RUN.pending=false; RUN.gold += TUNE.bossReward.gold; RUN.mat += TUNE.bossReward.mat;
     flushScr(); REC.floors.push({ floor:RUN.floor, sec:Math.round((REC.t.map+REC.t.battle+REC.t.other)/1000), battles:REC.battles.length, nodes:RUN.li+1 });
     if (RUN.floor >= TUNE.floors){ endRun(true); return; }
-    const h = TUNE.restHealBattle; RUN.hero = Math.min(TUNE.hero.hp, RUN.hero + h); if (RUN.auto>0) RUN.auto = Math.min(autoMaxHp(), RUN.auto + h);
+    const h = TUNE.restHealBattle; RUN.hero = Math.min(TUNE.hero.hp, RUN.hero + h); healParty(h);
     const doneFloor = RUN.floor; RUN.floor++; RUN.map = genMap(floorSeed(RUN.seed, RUN.floor), RUN.floor); RUN.li=-1; RUN.ii=-1; saveRun();
     $('fl-title').textContent = `フロア${doneFloor}のボス ${S.e.def.name} を倒した`;
-    $('fl-body').innerHTML = `<p>金 +${TUNE.bossReward.gold}（このラン ${RUN.gold}）・素材 +${TUNE.bossReward.mat}（このラン ${RUN.mat}）</p>${gotMsg}<p>小休止＝HP+${h}。圧は ${RUN.pp}。</p><p>次＝<b>フロア${RUN.floor}／${TUNE.floors}</b>（新しい地図・<b>別の敵</b>・${RUN.floor>=TUNE.floors?'最後のボス':'その先にもう1つ'}）</p>${RUN.auto<=0 && RUN.autoBrokeAt ? '<p class="warn">人形は壊れている（設計図は残る）。</p>':''}`;
+    $('fl-body').innerHTML = `<p>金 +${TUNE.bossReward.gold}（このラン ${RUN.gold}）・素材 +${TUNE.bossReward.mat}（このラン ${RUN.mat}）</p>${gotMsg}<p>小休止＝HP+${h}。圧は ${RUN.pp}。</p><p>次＝<b>フロア${RUN.floor}／${TUNE.floors}</b>（新しい地図・<b>別の敵</b>・${RUN.floor>=TUNE.floors?'最後のボス':'その先にもう1つ'}）</p><p class="dim">人形＝${partyText(RUN.party, true)}</p>`;
     show('s-floor'); scrEnter('other'); return;
   }
   const r = TUNE.reward[n.type], h = TUNE.restHealBattle;
   RUN.gold += r.gold; RUN.mat += r.mat;
-  RUN.hero = Math.min(TUNE.hero.hp, RUN.hero + h); if (RUN.auto>0) RUN.auto = Math.min(autoMaxHp(), RUN.auto + h);
+  RUN.hero = Math.min(TUNE.hero.hp, RUN.hero + h); healParty(h);
   $('rw-title').textContent = `${S.e.def.name} を倒した`;
-  $('rw-body').innerHTML = `<p>金 +${r.gold}（このラン ${RUN.gold}）・素材 +${r.mat}（このラン ${RUN.mat}）</p>${gotMsg}<p>小休止＝HP+${h}。圧は ${RUN.pp}。</p>${RUN.auto<=0 && RUN.autoBrokeAt ? '<p class="warn">人形は壊れている（設計図は残る）。</p>':''}`;
+  $('rw-body').innerHTML = `<p>金 +${r.gold}（このラン ${RUN.gold}）・素材 +${r.mat}（このラン ${RUN.mat}）</p>${gotMsg}<p>小休止＝HP+${h}。圧は ${RUN.pp}。</p><p class="dim">人形＝${partyText(RUN.party, true)}</p>${aliveParty().length===0 && RUN.party.some(Boolean) ? '<p class="warn">人形は壊れている（設計図は残る）。</p>':''}`;
   show('s-reward'); scrEnter('other');
 }
 function endRun(win, cause){
   flushScr(); scrEnter(null);
   RUN.done = true; RUN.result = win ? `勝利（フロア${TUNE.floors}のボス撃破）` : `敗北（${cause}・フロア${RUN.floor} ノード${RUN.li+1}）`;
-  const autoAlive = RUN.auto>0;
-  // 持ち帰り＝勝利：金・素材・人形／敗北：素材だけ・金は失う・人形は壊れる。拾った設計図はどちらでも残る
-  if (win){ META.gold += RUN.gold; META.mat += RUN.mat; META.autoAlive = autoAlive; if (!autoAlive) META.autoType=null; META.wins++; }
-  else { META.mat += RUN.mat; META.autoAlive = false; META.autoType = null; }
+  // 持ち帰り＝勝利：金・素材・生き残った人形／敗北：素材だけ・金は失う・人形は2体とも壊れる（仮決め）。拾った設計図はどちらでも残る
+  if (win){ META.gold += RUN.gold; META.mat += RUN.mat; META.party = RUN.party.map(m => (m && m.hp>0) ? m.type : null); META.wins++; }
+  else { META.mat += RUN.mat; META.party = RUN.party.map(()=>null); }
   RUN.bpFound.forEach(id=>{ if (!META.blueprints.includes(id)) META.blueprints.push(id); });
   META.runs++;
-  REC.take = { win, gold: win?RUN.gold:0, goldLost: win?0:RUN.gold, mat:RUN.mat, autoAlive: win?autoAlive:false, autoBrokeAt:RUN.autoBrokeAt, autoType:RUN.autoType, hadAuto: RUN.autoType!=null, nodes:RUN.path.length, floor:RUN.floor, path:RUN.path.slice(), result:RUN.result, resumed:RUN.resumed||0, items:RUN.items.slice(), bpFound:RUN.bpFound.slice() };
+  REC.take = { win, gold: win?RUN.gold:0, goldLost: win?0:RUN.gold, mat:RUN.mat, party: RUN.party.map(m => m ? { type:m.type, hp:m.hp, brokeAt:m.brokeAt, alive: win && m.hp>0 } : null), hadAuto: RUN.party.some(Boolean), nodes:RUN.path.length, floor:RUN.floor, path:RUN.path.slice(), result:RUN.result, resumed:RUN.resumed||0, items:RUN.items.slice(), bpFound:RUN.bpFound.slice() };
   saveMeta(); try{ localStorage.removeItem(KEY_RUN); }catch(e){}
   showResult();
 }
@@ -744,16 +784,21 @@ function summarize(){
   const byE = {};
   REC.battles.forEach(b=>{ const o = byE[b.id] = byE[b.id] || {n:0, win:0, turns:0, hit:0, burst:0, heat:0, taken:0}; o.n++; if (b.win) o.win++; o.turns+=b.turns; o.hit+=b.hit; o.burst+=b.burst; o.heat+=b.heat.length; o.taken+=b.taken; });
   const enemies = Object.entries(byE).map(([id,o])=>({ id, n:o.n, win:o.win, avgT:(o.turns/o.n).toFixed(1), burstRate: (o.hit+o.burst)>0 ? Math.round(o.burst/(o.hit+o.burst)*100) : 0, heatPer:(o.heat/o.n).toFixed(1), takenPer:Math.round(o.taken/o.n) }));
-  return { n, dist, rep, sw, moods, think:avg(thinks), thinkMed:med(thinks), picks:picks.length, pickAvg:avg(pms), pickMed:med(pms), kinds, total, enemies };
+  // 人形の選択（b）＝2体とも動けた戦闘で「誰を出したか」＝敵×人形・秒／人形の出番＝人形ごとの戦数・ターン・相手
+  const ap = REC.autoPicks, apms = ap.map(x=>x.ms);
+  const byED = {}; ap.forEach(x=>{ (byED[x.enemy]=byED[x.enemy]||{})[x.pick] = ((byED[x.enemy]||{})[x.pick]||0)+1; });
+  const byD = {}; REC.battles.forEach(b=>{ const o = byD[b.auto] = byD[b.auto] || {n:0, win:0, turns:0, foes:[]}; o.n++; if (b.win) o.win++; o.turns += b.turns; o.foes.push(b.id); });
+  const heroDist = {}; REC.turns.forEach(t=>{ const d = t.tactic==='-' ? '-' : t.tactic.split('/')[0]; const o = heroDist[d] = heroDist[d] || {n:0, atk:0}; o.n++; if (t.cmd==='攻撃') o.atk++; });
+  return { n, dist, rep, sw, moods, think:avg(thinks), thinkMed:med(thinks), picks:picks.length, pickAvg:avg(pms), pickMed:med(pms), kinds, total, enemies, autoPicks:ap.length, apMed:med(apms), apAvg:avg(apms), byED, byD, heroDist };
 }
 const KIND = {fight:'戦闘', elite:'強敵', boss:'ボス', treasure:'宝', event:'出来事', rest:'休憩'};
 function showResult(){
   const s = summarize(), tk = REC.take;
   $('r-title').textContent = tk.result;
-  const a = tk.autoType ? TUNE.autos.find(x=>x.id===tk.autoType) : null;
   let h = `<p><b>${tk.result}</b>　フロア ${tk.floor}／${TUNE.floors}・ノード ${tk.nodes}／${RUN.map.length*TUNE.floors}　所要 ${Math.round(s.total/1000)} 秒（マップ ${Math.round(REC.t.map/1000)}・戦闘 ${Math.round(REC.t.battle/1000)}・その他 ${Math.round(REC.t.other/1000)}）</p>`;
   h += `<p>持ち帰り＝${tk.win?`金 +${tk.gold}`:`金 0（失った ${tk.goldLost}）`}・素材 +${tk.mat}${tk.bpFound.length?`・設計図 ${tk.bpFound.map(id=>TUNE.autos.find(x=>x.id===id).name).join('・')}`:''}　→ 部屋＝金 ${META.gold}・素材 ${META.mat}・武器 段階${META.weapon}</p>`;
-  h += `<p>人形＝${!tk.hadAuto?'なし（連れていない）':`${a.name}＝`+(tk.autoBrokeAt?`壊れた（ノード${tk.autoBrokeAt}・設計図は残る）`:tk.autoAlive?'生存':'壊れた（設計図は残る）')}　宝＝${tk.items.length?tk.items.map(id=>ITEM(id).short).join('・'):'なし'}</p>`;
+  h += `<p>人形＝${!tk.hadAuto?'なし（連れていない）':tk.party.filter(Boolean).map(m=>`${DEF(m.type).name}＝`+(m.brokeAt?`壊れた（ノード${m.brokeAt}）`:m.alive?'生存':'壊れた')).join('・')}（設計図は残る）　宝＝${tk.items.length?tk.items.map(id=>ITEM(id).short).join('・'):'なし'}</p>`;
+  if (s.autoPicks) h += `<p>誰を出す＝${s.autoPicks}回・考える時間 中央値 <b>${(s.apMed/1000).toFixed(1)}秒</b>／敵×人形＝${Object.entries(s.byED).map(([e,o])=>`${e}:${Object.entries(o).map(([d,v])=>d+v).join('')}`).join(' ')}</p>`;
   h += `<table><tr><th>敵</th><th>戦</th><th>平均T</th><th>暴発比</th><th>過熱/戦</th><th>被害/戦</th></tr>`;
   s.enemies.forEach(e=>{ h += `<tr><td>${e.id} ${ENEMY(e.id).name}</td><td>${e.win}/${e.n}</td><td>${e.avgT}</td><td>${e.burstRate}%</td><td>${e.heatPer}</td><td>${e.takenPer}</td></tr>`; });
   h += `</table>`;
@@ -765,7 +810,6 @@ function showResult(){
 }
 function buildOut(){
   const s = summarize(), tk = REC.take, L = [];
-  const a = tk.autoType ? TUNE.autos.find(x=>x.id===tk.autoType) : null;
   L.push(`[OVERPRESSURE Phase 2] ${VER} ${new Date().toLocaleString('ja-JP')}`);
   L.push(`[環境] ${window.navigator.standalone?'ホーム画面':'ブラウザ'} / 窓 ${innerWidth}x${innerHeight} / dpr ${devicePixelRatio} / ${location.protocol}`);
   L.push(`[ラン] ${tk.result} / 所要 ${Math.round(s.total/1000)}秒（マップ${Math.round(REC.t.map/1000)} 戦闘${Math.round(REC.t.battle/1000)} 他${Math.round(REC.t.other/1000)}）/ フロア ${tk.floor}/${TUNE.floors} / ノード ${tk.nodes}/${RUN.map.length*TUNE.floors} / 戦闘 ${REC.battles.length} / 再開 ${tk.resumed}回 / 種 ${RUN.seed}`);
@@ -778,7 +822,9 @@ function buildOut(){
   L.push(`[戦闘] 総ターン ${s.n} / 連打率 ${s.rep}% / 性格切替 ${s.sw}回 / 考える時間 平均${(s.think/1000).toFixed(1)}s 中央値${(s.thinkMed/1000).toFixed(1)}s / 暴発 味方${REC.burstsP} 敵${REC.burstsE} / 蒸気 ${REC.steam}回 吸気 ${REC.drained}回 反撃 ${REC.countered}回 / 分布 ${Object.entries(s.dist).map(([k,v])=>`${k}${v}`).join(' ')}`);
   L.push(`[敵別] ` + s.enemies.map(e=>`${e.id}:${e.win}/${e.n}戦 平均${e.avgT}T 暴発比${e.burstRate}% 過熱${e.heatPer}/戦 被害${e.takenPer}/戦`).join(' | '));
   L.push(`[過熱のターン] ` + REC.battles.map(b=>`${b.node}${b.id}@${b.pp0}:${b.heat.join(',')||'-'}/${b.turns}${b.win?'':'✗'}`).join(' '));
-  L.push(`[人形] ${!tk.hadAuto?'なし':`${a.name}(${a.role}) `+(tk.autoBrokeAt?`壊れた(ノード${tk.autoBrokeAt})`:tk.autoAlive?'生存':'壊れた')} / 性格 ${Object.entries(s.moods).map(([k,v])=>`${k}${v}T`).join(' ')} / [持ち帰り] 金+${tk.gold}${tk.goldLost?`(失${tk.goldLost})`:''} 素材+${tk.mat} → 金${META.gold} 素材${META.mat} 武器${META.weapon} 人形${META.autoAlive?TUNE.autos.find(x=>x.id===META.autoType).name:'なし'}`);
+  L.push(`[人形] ${!tk.hadAuto?'なし':tk.party.filter(Boolean).map(m=>`${DEF(m.type).name}(${DEF(m.type).role}) `+(m.brokeAt?`壊れた(${m.brokeAt})`:m.alive?'生存':'壊れた')).join('・')} / 性格 ${Object.entries(s.moods).map(([k,v])=>`${k}${v}T`).join(' ')} / [持ち帰り] 金+${tk.gold}${tk.goldLost?`(失${tk.goldLost})`:''} 素材+${tk.mat} → 金${META.gold} 素材${META.mat} 武器${META.weapon} 人形${META.party.filter(Boolean).length?META.party.filter(Boolean).map(id=>DEF(id).name).join('・'):'なし'}`);
+  L.push(`[人形の選択] 選択 ${s.autoPicks}回（2体とも動けた戦闘）/ 考える時間 中央値${(s.apMed/1000).toFixed(1)}s 平均${(s.apAvg/1000).toFixed(1)}s / 敵×人形 ${Object.entries(s.byED).map(([e,o])=>`${e}:${Object.entries(o).map(([d,v])=>d+v).join('')}`).join(' ')||'-'} / 内訳 ${REC.autoPicks.map(x=>`${x.node}${x.enemy}@${x.pp0}:${x.pick}(他:${x.other.join('/')})${(x.ms/1000).toFixed(1)}s`).join(' ')||'-'}`);
+  L.push(`[人形の出番] ` + (Object.entries(s.byD).map(([d,o])=>`${d==='-'?'なし':DEF(d).name}:${o.win}/${o.n}戦 ${o.turns}T(${o.foes.join(',')}) 主人公の攻撃${s.heroDist[d]?Math.round(s.heroDist[d].atk/s.heroDist[d].n*100):0}%`).join(' | ') || '-'));
   L.push(`[設計図] 拾得 ${tk.bpFound.length?tk.bpFound.map(id=>TUNE.autos.find(x=>x.id===id).name).join('・'):'なし'} / 所持 ${META.blueprints.map(id=>TUNE.autos.find(x=>x.id===id).name).join('・')} / 工房 ${META.ext.workshop?'開設済み':'未開設'}`);
   L.push(`[Q1 ノード迷い] ${REC.q.q1||'未回答'} / [Q2 戦闘迷い] ${REC.q.q2||'未回答'} / [Q3 もう1回] ${REC.q.q3||'未回答'} / [Q4 敵で攻め方] ${REC.q.q4||'未回答'}`);
   const byB = {}; REC.turns.forEach(t=>{ (byB[t.b]=byB[t.b]||[]).push(`${t.turn}:${t.cmd.slice(0,2)}@${t.ppBefore}/${t.epp}${tacticShort(t.tactic)}`); });
@@ -796,6 +842,8 @@ $('b-ev-a').addEventListener('click', ()=>evPick('a'));
 $('b-ev-b').addEventListener('click', ()=>evPick('b'));
 $('b-rs-a').addEventListener('click', ()=>rsPick('a'));
 $('b-rs-b').addEventListener('click', ()=>rsPick('b'));
+$('b-pk-0').addEventListener('click', ()=>pkPick(0));
+$('b-pk-1').addEventListener('click', ()=>pkPick(1));
 $('b-home').addEventListener('click', ()=>{ RUN = null; $('b-copy').textContent='結果をコピー'; renderRoom(); });
 $('b-tactic').addEventListener('click', ()=>{ if (!S || S.over || !AUTO() || S.auto<=0) return; S.mood=(S.mood+1)%TUNE.moods.length; REC.moodSwitch++; render(); });
 document.querySelectorAll('#qs button').forEach(b=>b.addEventListener('click', ()=>{
@@ -811,7 +859,7 @@ let resetArmed=false;
 $('b-reset').addEventListener('click', ()=>{ if (!resetArmed){ resetArmed=true; $('b-reset').textContent='本当に初期化する？（もう1回押す）'; setTimeout(()=>{ resetArmed=false; $('b-reset').textContent='すべて初期化（部屋・遠征）'; }, 4000); return; } META=newMeta(); RUN=null; REC=null; saveMeta(); saveRun(); resetArmed=false; $('b-reset').textContent='すべて初期化（部屋・遠征）'; $('save-msg').textContent='初期化しました'; renderRoom(); });
 $('ver').textContent = VER;
 loadAll(); renderRoom();
-window.OP = { floorSeed, get S(){return S;}, get RUN(){return RUN;}, get META(){return META;}, get REC(){return REC;}, TUNE, act, newRun, pickNode, reachable, genMap, nodeDone, evPick, rsPick, renderRoom, showMap, loadAll, summarize, buildOut, resolveNode, cur, makeAuto, scrapAuto, openExt, buyBlueprint, migrateMeta, hasCmd, tacticKey };
+window.OP = { floorSeed, get S(){return S;}, get RUN(){return RUN;}, get META(){return META;}, get REC(){return REC;}, TUNE, act, newRun, pickNode, reachable, genMap, nodeDone, evPick, rsPick, pkPick, preBattle, renderRoom, showMap, loadAll, summarize, buildOut, resolveNode, cur, makeAuto, scrapAuto, openExt, buyBlueprint, migrateMeta, hasCmd, tacticKey, aliveParty };
 </script>
 </body>
 </html>
