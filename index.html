@@ -147,10 +147,10 @@
       <h2>ルール</h2>
       <p>マップの<b>光っているノード</b>を選んで進む。先は全部見える（敵の種類・<b>敵の開幕の圧</b>・宝の中身）。<b>同じ層に並ぶ戦闘は敵の種類が違う</b>。9個目がボス。<b>ボスを倒すと次のフロア（新しい地図・別の敵）へ。2フロアで1ラン。</b></p>
       <p><b>敵は種類ごとに圧の性質が違う</b>（画面の1行と「次:」を見て攻め方を変える）。<b>宝はそのランだけ効く物</b>（持ち帰れない）。</p>
-      <p><b>4名固定</b>＝主人公〈火力〉・盾役・回復役・焚き役。<b>圧は4人で1本</b>＝全員の攻撃で溜まり、技で減る。溢れると全員が暴発する。</p>
-      <p><b>戦闘では人形の行をタップすると「技」に切り替わる</b>（もう一度で「溜める」に戻る）。<b>主人公の手を押すとターンが進む</b>＝主人公→盾役→回復役→焚き役の順に動き、圧が足りない技は溜めるに落ちる。盾役の<b>挑発</b>＝そのターンの敵の攻撃を自分が受ける／回復役の<b>整備</b>＝全員HP回復／焚き役の<b>過熱</b>＝敵の圧を上げる。主人公の<b>放圧 VENT</b>＝そのターンは全員が敵の攻撃を受けない（圧は0へ）。</p>
+      <p><b>4名固定</b>＝<b>機関士</b>（きかんし・主人公＝火力）・<b>缶番</b>（かまばん＝盾）・<b>油差し</b>（あぶらさし＝回復）・<b>火夫</b>（かふ＝焚き）。<b>圧は4人で1本</b>＝全員の攻撃で溜まり、技で減る。溢れると全員が暴発する。</p>
+      <p><b>戦闘では人形の行をタップすると「技」に切り替わる</b>（もう一度で「溜める」に戻る）。<b>機関士の手を押すとターンが進む</b>＝機関士→缶番→油差し→火夫の順に動き、圧が足りない技は溜めるに落ちる。<b>溢れの判定はターンの終わりに1回</b>（途中で一時的に溢れても、技で下げれば暴発しない）。<b>機関士のボタンには「その手の後の圧」が出る</b>（計画した技を織り込み・溢れるなら「溢れ」）。缶番の<b>挑発</b>＝そのターンの敵の攻撃を自分が受ける／油差しの<b>整備</b>＝全員HP回復／火夫の<b>過熱</b>＝敵の圧を上げる。機関士の<b>放圧 VENT</b>＝そのターンは全員が敵の攻撃を受けない（圧は0へ）。</p>
       <p><b>敵の攻撃は誰に来るか分からない</b>（敵ごとに偏りあり・砲は全員に）。</p>
-      <p><b>勝てば</b>金と素材と生き残った人形を持ち帰る。<b>主人公が倒れると</b>そのランの金を失い、素材と拾った設計図だけ持ち帰る。人形は3体とも壊れるが<b>設計図は残る</b>。</p>
+      <p><b>勝てば</b>金と素材と生き残った人形を持ち帰る。<b>機関士が倒れると</b>そのランの金を失い、素材と拾った設計図だけ持ち帰る。人形は3体とも壊れるが<b>設計図は残る</b>。</p>
       <p>ノードに着くたび自動保存。閉じても「続きから」でマップに戻る（戦闘の途中は保存しない）。</p>
       <p class="dim">ランが終わると結果画面が出るので「コピー」してサイファへ。</p>
     </div>
@@ -187,7 +187,7 @@
     <div class="stage" id="stage">
       <div class="sprw" id="spr-w"><div class="spr" id="spr-e"></div></div>
       <div class="fig enemy" id="f-enemy">A</div>
-      <div class="fig hero" id="f-hero">主</div>
+      <div class="fig hero" id="f-hero">機</div>
       <div class="fig auto a0" id="f-a0">盾</div><div class="fig auto a1" id="f-a1">整</div><div class="fig auto a2" id="f-a2">焚</div>
     </div>
     <div class="party" id="party"></div>
@@ -263,10 +263,10 @@
 </div>
 <script>
 'use strict';
-const VER = 'p4-0.1.0';
+const VER = 'p4-0.2.0';
 // ===== 調整値（すべて仮置き＝実機の感触で動かす）=====
 const TUNE = {
-  hero:{hp:100}, overflow:100,
+  hero:{hp:100, name:'機関士', en:'ENGINEER', kana:'きかんし'}, overflow:100,   // p4-0.2.0＝役の正式名称（マスター決定 2026-09-20＝機関区の持ち場の言葉・英語は VENT と同じ大文字）
   burst:{selfDmg:15, resetTo:30},          // 味方の暴発＝全員に15・圧は30へ・次ターン行動不能
   startPP:30,                              // 各戦闘の開幕の圧の下限（P0 案1）
   restHealBattle:20,                       // 戦闘後の回復
@@ -277,7 +277,7 @@ const TUNE = {
     vent: {name:'放圧', kind:'逃がす', need:1},   // p4＝問4 a＝逃げ＝このターン全員が敵の攻撃を受けない・圧を0へ・回復なし（回復は回復役へ）。P1＝過熱は焚き役へ移した
   },
   // p4＝Phase 2′（要件定義 §11）＝4名固定〈主人公＋3役〉・コマンド化〈既定は溜める・変えたい人形だけタップ・主人公の手でターンが進む〉・圧は共有1本・敵の標的はランダム＋1行の偏り
-  roles:[ {id:'tank', name:'盾役'}, {id:'medic', name:'回復役'}, {id:'stoker', name:'焚き役'} ],
+  roles:[ {id:'tank', name:'缶番', en:'BOILERMAN', kana:'かまばん'}, {id:'medic', name:'油差し', en:'OILER', kana:'あぶらさし'}, {id:'stoker', name:'火夫', en:'STOKER', kana:'かふ'} ],   // p4-0.2.0＝役の正式名称（旧＝盾役・回復役・焚き役）
   autos:[   // 役割枠に入る設計図（問2 b＝当面は各枠1種）。base＝溜める／tech＝技（圧を使う）。数値は仮置き（07 §1-1）
     {id:'shield', role:'tank',   name:'盾型',   hp:70, base:{name:'弱攻撃', dmg:6, pp:+10}, tech:{name:'挑発', pp:-15, desc:'このターンの敵の攻撃を自分が受ける（被害6割）'}},
     {id:'medic',  role:'medic',  name:'整備手', hp:55, base:{name:'弱攻撃', dmg:6, pp:+10}, tech:{name:'整備', pp:-30, heal:20, desc:'全員HP+20'}},
@@ -292,7 +292,7 @@ const TUNE = {
     {id:'A2', name:'装甲機兵・改', short:'機兵改', trait:'溜まりやすい・逃がさない', hp:140, armor:6, ppGain:25, atk:13, big:{name:'蒸気砲', dmg:32, need:75}, burst:{dmg:50}},
     {id:'D',  name:'蒸気砲台',    short:'砲台',   trait:'溜まりやすい（+35）・砲が重い', hp:120, armor:6, ppGain:35, atk:10, big:{name:'重蒸気砲', dmg:40, need:75}, burst:{dmg:50}},
     {id:'E',  name:'排気狼',      short:'狼',     trait:'圧50で放圧（HP+25）・弱った者を狙う', hp:100, armor:2, ppGain:25, atk:14, vent:{need:50, heal:25}, burst:{dmg:30}, target:'weak'},
-    {id:'F',  name:'吸気機兵',    short:'吸気',   trait:'味方の圧を吸う（-15）・主人公を狙う', hp:110, armor:5, ppGain:25, atk:12, drain:15, big:{name:'蒸気砲', dmg:30, need:75}, burst:{dmg:50}, target:'hero'},
+    {id:'F',  name:'吸気機兵',    short:'吸気',   trait:'味方の圧を吸う（-15）・機関士を狙う', hp:110, armor:5, ppGain:25, atk:12, drain:15, big:{name:'蒸気砲', dmg:30, need:75}, burst:{dmg:50}, target:'hero'},
     {id:'D2', name:'蒸気砲台・改', short:'砲台改', trait:'溜まりやすい（+35）・砲が重い', hp:150, armor:7, ppGain:35, atk:11, big:{name:'重蒸気砲', dmg:45, need:75}, burst:{dmg:50}},
     {id:'G',  name:'過圧機関',    short:'機関',   trait:'溜まりやすい・暴発に強い（30）・砲が重い', hp:200, armor:6, ppGain:30, atk:13, big:{name:'過圧砲', dmg:35, need:75}, burst:{dmg:30}},
   ],
@@ -312,7 +312,7 @@ const TUNE = {
     {id:'plate',    name:'補強板',       short:'被害-3',  desc:'このラン、受ける被害 -3', armor:3},
     {id:'valve',    name:'安全弁',       short:'溢れ+15', desc:'このラン、味方の溢れ値 +15', ovf:15},
     {id:'oil',      name:'応急油',       short:'全快',    desc:'今すぐ全員のHPを全快（壊れた人形は戻らない）', heal:true},
-    {id:'catalyst', name:'過熱の触媒',   short:'過熱+15', desc:'このラン、焚き役の過熱で上げる敵の圧 +15', heat:15},
+    {id:'catalyst', name:'過熱の触媒',   short:'過熱+15', desc:'このラン、火夫の過熱で上げる敵の圧 +15', heat:15},
     {id:'boiler',   name:'予備ボイラー', short:'開幕+20', desc:'このラン、各戦闘の開幕の圧の下限 +20（30→50）', start:20},
   ],
   rest:{ overflowUp:10 },
@@ -370,7 +370,7 @@ const ENEMY = id => TUNE.enemies.find(e=>e.id===id);
 const ITEM = id => TUNE.treasure.find(t=>t.id===id);
 const cur = () => RUN.map[RUN.li][RUN.ii];
 function newMeta(){ return { gold:0, mat:0, weapon:0, party:{tank:'shield', medic:null, stoker:null}, blueprints:TUNE.blueprint.start.slice(), ext:{}, runs:0, wins:0 }; }
-function newRec(){ return { ver:VER, t:{map:0,battle:0,other:0}, picks:[], choices:[], battles:[], bt:null, turns:[], burstsP:0, burstsE:0, steam:0, drained:0, countered:0, vents:0, dodged:0, items:[], bpFound:[], q:{}, take:null, floors:[], hits:{hero:0, tank:0, medic:0, stoker:0, all:0}, skills:{ tank:{fired:0, absorbed:0}, medic:{fired:0, healed:0}, stoker:{fired:0, finish:0} } }; }
+function newRec(){ return { ver:VER, t:{map:0,battle:0,other:0}, picks:[], choices:[], battles:[], bt:null, turns:[], burstsP:0, burstsE:0, steam:0, drained:0, countered:0, vents:0, dodged:0, items:[], bpFound:[], q:{}, take:null, floors:[], hits:{hero:0, tank:0, medic:0, stoker:0, all:0}, skills:{ tank:{fired:0, absorbed:0, fell:0}, medic:{fired:0, healed:0, fell:0}, stoker:{fired:0, finish:0, fell:0} } }; }
 function saveMeta(){ try{ localStorage.setItem(KEY_META, JSON.stringify(META)); }catch(e){} }
 function saveRun(){ try{ if (RUN) localStorage.setItem(KEY_RUN, JSON.stringify(RUN)); else localStorage.removeItem(KEY_RUN); }catch(e){} }
 function migrateMeta(m){   // Phase 1〜3 の記録を引き継ぐ。p4＝枠2の配列（party[]）→役割枠（party{tank,medic,stoker}）。砲手型・弁手は役に無い＝砲手型→素材+1・弁手〈旧 放圧手＝回復の系統〉→整備手の設計図に読み替え
@@ -470,7 +470,7 @@ function renderRoom(){
   $('m-auto').textContent = names.length ? names.join('・') : 'なし'; $('m-runs').textContent = `${META.runs}回（勝${META.wins}）`;
   $('b-sortie').textContent = inRun ? (RUN.li<0 ? `続きから（フロア${RUN.floor}・出発前）` : `続きから（フロア${RUN.floor}・ノード${RUN.li+1}／${RUN.map.length}）`) : (names.length ? `出撃する（${ROLES.filter(r=>META.party[r]).map(r=>DEF(META.party[r]).name).join('＋')}）` : '出撃する（人形なし）');
   // p4＝製造台＝役割枠3つ〈盾役・回復役・焚き役〉。各枠に、その役の設計図から製造（素材3）・解体で空ける（問2 b）
-  $('x-make-note').textContent = `役割枠3つ〈盾役・回復役・焚き役〉に、その役の設計図から製造＝素材${TUNE.room.make.mat}／解体＝素材+${TUNE.blueprint.scrapMat}（所持 素材${META.mat}）。4名固定＝主人公＋3役で出撃`;
+  $('x-make-note').textContent = `役割枠3つ〈${ROLES.map(r=>ROLE(r).name).join('・')}〉に、その役の設計図から製造＝素材${TUNE.room.make.mat}／解体＝素材+${TUNE.blueprint.scrapMat}（所持 素材${META.mat}）。4名固定＝機関士（主人公）＋3役で出撃`;
   let mk = '';
   ROLES.forEach(r=>{
     const id = META.party[r];
@@ -492,7 +492,7 @@ function renderRoom(){
     rest.forEach(b=>{ ex += `<div class="ext"><div>　設計図「${b.name}」<small>${ROLE(b.role).name}・HP${b.hp}</small></div><button data-buy="${b.id}" ${(META.gold<TUNE.blueprint.shopCost||inRun)?'disabled':''}>買う</button></div>`; });
   });
   $('ext-list').innerHTML = ex;
-  $('m-note').textContent = inRun ? '遠征中（マップから再開できる）' : (names.length ? `${names.join('／')}　設計図＝${META.blueprints.map(id=>DEF(id).name).join('・')}` : '人形がいない。設計図から製造するか、主人公だけで出撃する。');
+  $('m-note').textContent = inRun ? '遠征中（マップから再開できる）' : (names.length ? `${names.join('／')}　設計図＝${META.blueprints.map(id=>DEF(id).name).join('・')}` : '人形がいない。設計図から製造するか、機関士だけで出撃する。');
   document.querySelectorAll('#make-list button[data-make]').forEach(b=>b.addEventListener('click', ()=>makeAuto(b.dataset.make)));
   document.querySelectorAll('#make-list button[data-scrap]').forEach(b=>b.addEventListener('click', ()=>scrapAuto(b.dataset.scrap)));
   document.querySelectorAll('#ext-list button[data-ext]').forEach(b=>b.addEventListener('click', ()=>openExt(b.dataset.ext)));
@@ -583,8 +583,8 @@ function showTreasure(n){
 }
 function showEvent(n){
   const ev=TUNE.event;
-  $('ev-title').textContent = ev.name; $('ev-body').innerHTML = `<p>${ev.text}</p><p class="dim">主人公 ${RUN.hero}/${TUNE.hero.hp}・人形 ${partyText(RUN.party, true)}</p>`;
-  $('b-ev-a').innerHTML = `<b>${ev.a.label}</b><small>金+${ev.a.gold}・主人公HP${ev.a.hp}</small>`;
+  $('ev-title').textContent = ev.name; $('ev-body').innerHTML = `<p>${ev.text}</p><p class="dim">機関士 ${RUN.hero}/${TUNE.hero.hp}・人形 ${partyText(RUN.party, true)}</p>`;
+  $('b-ev-a').innerHTML = `<b>${ev.a.label}</b><small>金+${ev.a.gold}・機関士HP${ev.a.hp}</small>`;
   $('b-ev-b').innerHTML = `<b>${ev.b.label}</b><small>全員HP+${ev.b.heal}</small>`;
   show('s-event'); scrEnter('other'); choiceShownAt = performance.now();
 }
@@ -596,7 +596,7 @@ function evPick(which){
   nodeDone();
 }
 function showRest(n){
-  $('rs-body').innerHTML = `<p>主人公 ${RUN.hero}/${TUNE.hero.hp}・人形 ${partyText(RUN.party, true)}${aliveParty().length===0 && ROLES.some(r=>RUN.party[r])?'（壊れている＝修理できない・設計図は残る）':''}</p><p>味方の溢れ値 ${OVF()}・圧 ${RUN.pp}</p>`;
+  $('rs-body').innerHTML = `<p>機関士 ${RUN.hero}/${TUNE.hero.hp}・人形 ${partyText(RUN.party, true)}${aliveParty().length===0 && ROLES.some(r=>RUN.party[r])?'（壊れている＝修理できない・設計図は残る）':''}</p><p>味方の溢れ値 ${OVF()}・圧 ${RUN.pp}</p>`;
   $('b-rs-a').innerHTML = `<b>整備</b><small>全員のHPを全快（壊れた人形は戻らない）</small>`;
   $('b-rs-b').innerHTML = `<b>増圧</b><small>このランの溢れ値 +${TUNE.rest.overflowUp}（${OVF()}→${OVF()+TUNE.rest.overflowUp}）</small>`;
   show('s-rest'); scrEnter('other'); choiceShownAt = performance.now();
@@ -609,7 +609,7 @@ function rsPick(which){
 }
 // ===== 戦闘（p4＝Phase 2′）=====
 // 1ターン＝3役は既定「溜める」。人形の行をタップ→「技」に切替（もう一度で戻る）。主人公の手でターンが進む＝主人公→盾役→回復役→焚き役の順に解決→敵。技はその時点の圧が足りなければ溜めるに落ちる
-const memberName = r => r==='hero' ? '主人公' : (S && S.party[r]) ? DEF(S.party[r].type).name : ROLE(r).name;
+const memberName = r => r==='hero' ? TUNE.hero.name : ROLE(r).name;   // p4-0.2.0＝ログと記録は役の正式名称で呼ぶ（型の名は行と部屋に）
 function startBattle(n){
   const t = ENEMY(n.enemy);
   const party = {}; ROLES.forEach(r=>{ const m = RUN.party[r]; party[r] = (m && m.hp>0) ? { type:m.type, hp:m.hp } : null; });
@@ -633,10 +633,10 @@ function enemyNext(){
   if (e.skip) return '次: <b>暴発の反動で動けない</b>';
   if (d.vent && e.pp >= d.vent.need) return `次: <b>放圧</b>（HP+${d.vent.heal}・圧0）`;
   if (d.big && e.pp >= d.big.need) return `次: <b>${d.big.name} ${d.big.dmg}＝全員に</b>（圧-${d.big.need}）`;
-  const who = d.target==='hero' ? '主人公を狙う' : d.target==='weak' ? '弱った者を狙う' : '誰かを狙う';
+  const who = d.target==='hero' ? '機関士を狙う' : d.target==='weak' ? '弱った者を狙う' : '誰かを狙う';
   return `次: <b>攻撃 ${d.atk}</b>（圧+${d.ppGain}・${who}）` + (d.steam ? `＋<b>蒸気＝味方の圧+${d.steam}</b>` : '') + (d.drain ? `＋<b>吸気＝味方の圧-${d.drain}</b>` : '') + (d.counter ? `　※攻撃には<b>反撃${d.counter}</b>` : '');
 }
-function togglePlan(r){ if (!S || S.over || !S.party[r]) return; S.plan[r] = !S.plan[r]; render(); }
+function togglePlan(r){ if (!S || S.over || !S.party[r]) return; S.plan[r] = !S.plan[r]; render(); armCmds(); }   // p4-0.2.0＝計画が変わればボタンの先読みも更新
 function render(){
   const e=S.e, d=e.def;
   $('e-name').textContent = d.name + (S.boss?'（ボス）':''); $('e-trait').textContent = '（'+d.trait+'）';
@@ -647,17 +647,17 @@ function render(){
   const b = BON(); const bs = []; if (b.atk) bs.push(`攻+${b.atk}`); if (b.armor) bs.push(`被害-${b.armor}`); if (b.heat) bs.push(`過熱+${b.heat}`); if (b.start) bs.push(`開幕+${b.start}`); if (b.ovf) bs.push(`溢れ+${b.ovf}`);
   $('h-bonus').textContent = bs.length ? '（宝 '+bs.join(' ')+'）' : '';
   // パーティ4行＝主人公＋3役。人形の行はタップで「溜める／技」
-  let h = `<div class="prow hero"><div class="pn">火力<b>主人公</b></div><div class="pb"><div class="bar"><i style="width:${Math.max(0,S.hero/TUNE.hero.hp*100)}%"></i></div><small>${S.hero}/${TUNE.hero.hp}</small></div><div class="pa">${S.guard?'<b>防御の構え</b>':'下の手でターンが進む'}</div></div>`;
+  let h = `<div class="prow hero"><div class="pn">${TUNE.hero.en}<b>${TUNE.hero.name}</b></div><div class="pb"><div class="bar"><i style="width:${Math.max(0,S.hero/TUNE.hero.hp*100)}%"></i></div><small>${S.hero}/${TUNE.hero.hp}</small></div><div class="pa">${S.guard?'<b>防御の構え</b>':'人形の行をタップで技⇄溜める'}</div></div>`;
   ROLES.forEach(r=>{
     const m = S.party[r];
     if (!m){ h += `<div class="prow dead"><div class="pn">${ROLE(r).name}<b>なし</b></div><div class="pb"><small>壊れている（設計図は残る）</small></div><div class="pa"></div></div>`; return; }
-    const a = DEF(m.type), on = S.plan[r], can = S.pp >= -a.tech.pp;
-    const act = on ? `<b>技：${a.tech.name}</b>圧${a.tech.pp}${can?'':'（足りない→溜める）'}` : `<b>溜める：${a.base.name}</b>圧+${a.base.pp}`;
-    h += `<div class="prow${on?' tech':''}${m.hp<=0?' dead':''}" data-role="${r}"><div class="pn">${ROLE(r).name}<b>${a.name}</b></div><div class="pb"><div class="bar"><i style="width:${Math.max(0,m.hp/a.hp*100)}%"></i></div><small>${m.hp}/${a.hp}　タップで切替</small></div><div class="pa">${act}</div></div>`;
+    const a = DEF(m.type), on = S.plan[r];
+    const act = on ? `<b>技：${a.tech.name}</b>圧${a.tech.pp}` : `<b>溜める：${a.base.name}</b>圧+${a.base.pp}`;   // p4-0.2.0＝「足りない」は機関士のボタン側で先読み（行の判定は手を押す前の圧だったため外した）
+    h += `<div class="prow${on?' tech':''}${m.hp<=0?' dead':''}" data-role="${r}"><div class="pn">${ROLE(r).en}<b>${ROLE(r).name}</b></div><div class="pb"><div class="bar"><i style="width:${Math.max(0,m.hp/a.hp*100)}%"></i></div><small>${a.name} ${m.hp}/${a.hp}</small></div><div class="pa">${act}</div></div>`;
   });
   $('party').innerHTML = h;
   document.querySelectorAll('#party [data-role]').forEach(el=>el.addEventListener('click', ()=>togglePlan(el.dataset.role)));
-  $('p-pp-t').textContent = `${S.pp}/${OVF()}${S.pp>=OVF()-30?' ⚠️':''}`; bar('p-pp', S.pp, OVF()); $('p-pp-bar').classList.toggle('hot', S.pp>=OVF()-30);
+  const dz = project('atk').over; $('p-pp-t').textContent = `${S.pp}/${OVF()}${dz?' ⚠️攻撃で溢れる':''}`; bar('p-pp', S.pp, OVF()); $('p-pp-bar').classList.toggle('hot', dz);   // p4-0.2.0＝⚠️は「今の計画で攻撃を押すと溢れる」に合わせた（旧＝溢れ−30＝1人分の供給の頃の線）
   ROLES.forEach((r,i)=>{ $('f-a'+i).classList.toggle('dead', !S.party[r] || S.party[r].hp<=0); });
 }
 function setLog(html){ $('log').innerHTML = html; }
@@ -669,13 +669,21 @@ const figOf = r => r==='hero' ? 'f-hero' : 'f-a'+ROLES.indexOf(r);
 function flash(){ const x=document.createElement('div'); x.className='flash'; $('stage').appendChild(x); setTimeout(()=>x.remove(),600); }
 let armedAt = 0;
 function hasCmd(k){ const c=TUNE.cmd[k]; if (!c) return false; return !c.weapon || RUN.weapon >= c.weapon; }
+// p4-0.2.0＝先読み＝この手を押したとき、今の計画〈技／溜める〉で解決した後の圧と、圧が足りず落ちる技（順序＝機関士→缶番→油差し→火夫・溢れの判定はターン末）
+function project(k){
+  const c = TUNE.cmd[k]; let pp = k==='vent' ? 0 : S.pp + c.pp; const fell = [];
+  for (const r of ROLES){ const m = S.party[r]; if (!m || m.hp<=0) continue; const a = DEF(m.type);
+    if (S.plan[r] && pp >= -a.tech.pp) pp += a.tech.pp; else { if (S.plan[r]) fell.push(ROLE(r).name); pp += a.base.pp; } }
+  return { pp, fell, over: pp >= OVF() };
+}
+const projText = k => { const p = project(k); return (p.over ? `→<span class="warn">溢れ！</span>` : `→圧${p.pp}`) + (p.fell.length ? `<span class="warn">（${p.fell.join('・')}の技は落ちる）</span>` : ''); };
 function armCmds(){
   const c = TUNE.cmd, g = $('cmds'); g.innerHTML='';
   const items = [
-    ['atk',  `攻撃 ${c.atk.dmg + WPN()}`, `圧+${c.atk.pp}`],
-    ['grd',  `防御`, `次の被害を半分・圧+${c.grd.pp}`],
-    ['smash',`強打 ${Math.round(c.smash.base + c.smash.rate*S.pp) + WPN()}`, `圧-${-c.smash.pp}（圧${c.smash.need}以上）`],
-    ['vent', `放圧 VENT`, `このターン全員が敵の攻撃を受けない・圧を0へ`],
+    ['atk',  `攻撃 ${c.atk.dmg + WPN()}`, `圧+${c.atk.pp}${projText('atk')}`],
+    ['grd',  `防御`, `次の被害を半分・圧+${c.grd.pp}${projText('grd')}`],
+    ['smash',`強打 ${Math.round(c.smash.base + c.smash.rate*S.pp) + WPN()}`, `圧-${-c.smash.pp}（圧${c.smash.need}以上）${projText('smash')}`],
+    ['vent', `放圧 VENT`, `このターン全員が敵の攻撃を受けない・圧を0へ${projText('vent')}`],
   ];
   for (const [k,l,s] of items){
     const b = document.createElement('button'); b.className='cmd'+(k==='vent'?' vent':'');
@@ -690,7 +698,7 @@ function partyDmgTo(enemy, raw){ return Math.max(1, raw - enemy.def.armor); }
 function dmgToHero(raw){ const v=Math.max(1, raw - BON().armor); S.hero -= v; S.taken += v; REC.bt.taken += v; return v; }
 function dmgToDoll(r, raw){ const m=S.party[r]; if (!m || m.hp<=0) return 0; const v=Math.max(1, raw - BON().armor); m.hp -= v; S.taken += v; REC.bt.taken += v; if (m.hp<0) m.hp=0; return v; }
 function dmgTo(r, raw){ return r==='hero' ? dmgToHero(raw) : dmgToDoll(r, raw); }
-const brokeMsg = r => (S.party[r] && S.party[r].hp<=0) ? ` <span class="warn">${DEF(S.party[r].type).name}が壊れた（設計図は残る）。</span>` : '';
+const brokeMsg = r => (S.party[r] && S.party[r].hp<=0) ? ` <span class="warn">${ROLE(r).name}〈${DEF(S.party[r].type).name}〉が壊れた（設計図は残る）。</span>` : '';
 function counterOn(who){   // 敵C＝攻撃した者に反撃（攻撃・弱攻撃だけ。強打・過熱は弾かれない）
   const d=S.e.def; if (!d.counter || S.e.hp<=0) return '';
   REC.countered++;
@@ -701,7 +709,8 @@ function act(k){
   if (!hasCmd(k)) return;
   const c = TUNE.cmd[k], e = S.e, d = e.def, bt = REC.bt;
   if (S.pp < c.need) return;   // ボタンの無効化と同じ条件をここでも守る
-  const rec = { b:REC.battles.length, e:d.id, pp0:bt.pp0, turn:++S.turn, ppBefore:S.pp, epp:e.pp, cmd:c.name, plan:'', think:Math.round(performance.now()-armedAt) };
+  const rec = { b:REC.battles.length, e:d.id, pp0:bt.pp0, turn:++S.turn, ppBefore:S.pp, epp:e.pp, cmd:c.name, plan:'', fell:'', burst:false, think:Math.round(performance.now()-armedAt) };   // p4-0.2.0＝fell＝落ちた技・burst＝このターンに味方が暴発
+  const bp0 = REC.burstsP;
   REC.turns.push(rec); bt.turns++;
   let msg = '';
   S.taunt = false; S.vent = false;
@@ -710,7 +719,6 @@ function act(k){
   else if (k==='grd'){ S.guard=true; S.pp+=c.pp; msg+=`防御の構え。`; }
   else if (k==='smash'){ const v=partyDmgTo(e, Math.round(c.base+c.rate*S.pp)+WPN()); e.hp-=v; bt.hit+=v; S.pp+=c.pp; msg+=`強打 <b>${v}</b>！`; hit('f-enemy'); }
   else if (k==='vent'){ S.vent=true; S.pp=0; REC.vents++; bt.vents++; msg+=`<b>放圧＝蒸気の幕</b>。このターンは誰も敵の攻撃を受けない。`; }
-  msg += checkPartyBurst();
   // 3役＝盾役→回復役→焚き役の順。既定は溜める・「技」に切り替えた役は圧が足りれば技
   for (const r of ROLES){
     const m = S.party[r]; if (!m || m.hp<=0) continue;
@@ -718,17 +726,18 @@ function act(k){
     const a = DEF(m.type), planned = S.plan[r], sk = REC.skills[r];
     if (planned && S.pp >= -a.tech.pp){
       S.pp += a.tech.pp; sk.fired++; rec.plan += a.tech.name.slice(0,1);
-      if (r==='tank'){ S.taunt = true; msg += ` ${a.name}の挑発＝このターンは自分が受ける。`; }
-      else if (r==='medic'){ let sum=0; const h=a.tech.heal; const hb=Math.min(TUNE.hero.hp, S.hero+h)-S.hero; S.hero+=hb; sum+=hb; ROLES.forEach(x=>{ const mm=S.party[x]; if (mm && mm.hp>0){ const g=Math.min(DEF(mm.type).hp, mm.hp+h)-mm.hp; mm.hp+=g; sum+=g; } }); sk.healed += sum; msg += ` ${a.name}の整備＝全員HP+${h}。`; }
-      else if (r==='stoker'){ const v=partyDmgTo(e,a.tech.dmg), ep=a.tech.epp+BON().heat, was=e.pp; e.hp-=v; bt.hit+=v; e.pp+=ep; bt.heat.push(S.turn); if (was<TUNE.overflow && e.pp>=TUNE.overflow) sk.finish++; msg += ` ${a.name}の過熱＝敵の圧+${ep}。`; msg += checkEnemyBurst(); }
+      if (r==='tank'){ S.taunt = true; msg += ` ${ROLE(r).name}の挑発＝このターンは自分が受ける。`; }
+      else if (r==='medic'){ let sum=0; const h=a.tech.heal; const hb=Math.min(TUNE.hero.hp, S.hero+h)-S.hero; S.hero+=hb; sum+=hb; ROLES.forEach(x=>{ const mm=S.party[x]; if (mm && mm.hp>0){ const g=Math.min(DEF(mm.type).hp, mm.hp+h)-mm.hp; mm.hp+=g; sum+=g; } }); sk.healed += sum; msg += ` ${ROLE(r).name}の整備＝全員HP+${h}。`; }
+      else if (r==='stoker'){ const v=partyDmgTo(e,a.tech.dmg), ep=a.tech.epp+BON().heat, was=e.pp; e.hp-=v; bt.hit+=v; e.pp+=ep; bt.heat.push(S.turn); if (was<TUNE.overflow && e.pp>=TUNE.overflow) sk.finish++; msg += ` ${ROLE(r).name}の過熱＝敵の圧+${ep}。`; msg += checkEnemyBurst(); }
     } else {
-      if (planned) msg += ` <span class="warn">${a.name}は圧が足りず溜めた。</span>`;
-      const v=partyDmgTo(e,a.base.dmg); e.hp-=v; bt.hit+=v; S.pp+=a.base.pp; msg+=` ${a.name}の${a.base.name} ${v}。`; hit('f-enemy'); msg += counterOn(r);
+      if (planned){ sk.fell = (sk.fell||0)+1; rec.fell += a.tech.name.slice(0,1); msg += ` <span class="warn">${ROLE(r).name}は圧が足りず溜めた。</span>`; }
+      const v=partyDmgTo(e,a.base.dmg); e.hp-=v; bt.hit+=v; S.pp+=a.base.pp; msg+=` ${ROLE(r).name}の${a.base.name} ${v}。`; hit('f-enemy'); msg += counterOn(r);
     }
     S.plan[r] = false;
-    msg += checkPartyBurst();
   }
   ROLES.forEach(r=>{ S.plan[r]=false; });
+  msg += checkPartyBurst();   // p4-0.2.0＝溢れの判定はターン末に1回（旧＝機関士・各役の段ごと＝技をタップしていても技が引く前に溢れた 7/13）
+  rec.burst = REC.burstsP > bp0;
   S.skipNow = false;
   if (S.hero<=0){ S.hero=0; render(); setLog(msg); S.over=true; armCmds(); setTimeout(()=>afterBattle(false), 700); return; }
   if (e.hp<=0){ e.hp=0; render(); setLog(msg+` <b>${d.name}を倒した！</b>`); S.over=true; armCmds(); setTimeout(()=>afterBattle(true), 700); return; }
@@ -783,7 +792,7 @@ function enemyAct(){
     if (who==='hero' && S.guard){ hv = Math.ceil(dmg/2); name += '（防御で半減）'; }
     if (who==='tank' && S.taunt){ hv = Math.ceil(dmg*TUNE.tankRate); REC.skills.tank.absorbed++; name += '（挑発で受けた・被害6割）'; }
     const v=dmgTo(who, hv); hit(figOf(who)); m += ` 敵の${name} <b>${v}</b>→${memberName(who)}。` + (who==='hero' ? '' : brokeMsg(who));
-    if (d.steam){ S.pp += d.steam; REC.steam++; m += ` <span class="warn">蒸気を浴びた＝味方の圧+${d.steam}。</span>`; if (S.pp >= OVF()) m += checkPartyBurst(); }
+    if (d.steam){ S.pp += d.steam; REC.steam++; m += ` <span class="warn">蒸気を浴びた＝味方の圧+${d.steam}。</span>`; if (S.pp >= OVF()){ m += checkPartyBurst(); const lt=REC.turns[REC.turns.length-1]; if (lt) lt.burst = true; } }
     if (d.drain){ const before=S.pp; S.pp = Math.max(0, S.pp - d.drain); REC.drained++; m += ` <span class="warn">吸気＝味方の圧-${before-S.pp}。</span>`; }
   }
   S.guard = false;
@@ -857,20 +866,20 @@ function summarize(){
   return { n, dist, rep, techTurns, think:avg(thinks), thinkMed:med(thinks), picks:picks.length, pickAvg:avg(pms), pickMed:med(pms), kinds, total, secPerTurn, enemies };
 }
 const KIND = {fight:'戦闘', elite:'強敵', boss:'ボス', treasure:'宝', event:'出来事', rest:'休憩'};
-const roleLine = () => { const sk=REC.skills; return `盾役:挑発${sk.tank.fired}回 受けた${sk.tank.absorbed}回 | 回復役:整備${sk.medic.fired}回 回復${sk.medic.healed} | 焚き役:過熱${sk.stoker.fired}回 仕上げ${sk.stoker.finish}回`; };
-const hitsLine = () => { const h=REC.hits; return `主人公${h.hero} 盾役${h.tank} 回復役${h.medic} 焚き役${h.stoker} 砲〈全員〉${h.all}`; };
+const roleLine = () => { const sk=REC.skills, f=o=>o.fell?`(落ち${o.fell})`:''; return `${ROLE('tank').name}:挑発${sk.tank.fired}回${f(sk.tank)} 受けた${sk.tank.absorbed}回 | ${ROLE('medic').name}:整備${sk.medic.fired}回${f(sk.medic)} 回復${sk.medic.healed} | ${ROLE('stoker').name}:過熱${sk.stoker.fired}回${f(sk.stoker)} 仕上げ${sk.stoker.finish}回`; };   // p4-0.2.0＝役の正式名称・落ちた技の回数
+const hitsLine = () => { const h=REC.hits; return `${TUNE.hero.name}${h.hero} ${ROLE('tank').name}${h.tank} ${ROLE('medic').name}${h.medic} ${ROLE('stoker').name}${h.stoker} 砲〈全員〉${h.all}`; };
 function showResult(){
   const s = summarize(), tk = REC.take;
   $('r-title').textContent = tk.result;
   let h = `<p><b>${tk.result}</b>　フロア ${tk.floor}／${TUNE.floors}・ノード ${tk.nodes}／${RUN.map.length*TUNE.floors}　所要 ${Math.round(s.total/1000)} 秒（マップ ${Math.round(REC.t.map/1000)}・戦闘 ${Math.round(REC.t.battle/1000)}・その他 ${Math.round(REC.t.other/1000)}）</p>`;
   h += `<p>持ち帰り＝${tk.win?`金 +${tk.gold}`:`金 0（失った ${tk.goldLost}）`}・素材 +${tk.mat}${tk.bpFound.length?`・設計図 ${tk.bpFound.map(id=>DEF(id).name).join('・')}`:''}　→ 部屋＝金 ${META.gold}・素材 ${META.mat}・武器 段階${META.weapon}</p>`;
-  h += `<p>人形＝${!tk.hadAuto?'なし（連れていない）':tk.party.filter(Boolean).map(m=>`${ROLE(m.role).name}${DEF(m.type).name}＝`+(m.brokeAt?`壊れた（ノード${m.brokeAt}）`:m.alive?'生存':'壊れた')).join('・')}（設計図は残る）　宝＝${tk.items.length?tk.items.map(id=>ITEM(id).short).join('・'):'なし'}</p>`;
+  h += `<p>人形＝${!tk.hadAuto?'なし（連れていない）':tk.party.filter(Boolean).map(m=>`${ROLE(m.role).name}〈${DEF(m.type).name}〉＝`+(m.brokeAt?`壊れた（ノード${m.brokeAt}）`:m.alive?'生存':'壊れた')).join('・')}（設計図は残る）　宝＝${tk.items.length?tk.items.map(id=>ITEM(id).short).join('・'):'なし'}</p>`;
   h += `<p>役の技＝${roleLine()}</p><p>敵の狙い＝${hitsLine()}</p>`;
   h += `<table><tr><th>敵</th><th>戦</th><th>平均T</th><th>暴発比</th><th>過熱/戦</th><th>被害/戦</th></tr>`;
   s.enemies.forEach(e=>{ h += `<tr><td>${e.id} ${ENEMY(e.id).name}</td><td>${e.win}/${e.n}</td><td>${e.avgT}</td><td>${e.burstRate}%</td><td>${e.heatPer}</td><td>${e.takenPer}</td></tr>`; });
   h += `</table>`;
   h += `<p>ノード選択＝${s.picks}回（幅2以上）・考える時間 中央値 <b>${(s.pickMed/1000).toFixed(1)}秒</b>・平均 ${(s.pickAvg/1000).toFixed(1)}秒</p>`;
-  h += `<p>戦闘＝総ターン ${s.n}・1ターン <b>${s.secPerTurn.toFixed(1)}秒</b>・連打率 <b>${s.rep}%</b>・技を使ったターン ${s.techTurns}・放圧 ${REC.vents}回（防いだ攻撃 ${REC.dodged}）・暴発 味方${REC.burstsP} 敵${REC.burstsE}</p>`;
+  h += `<p>戦闘＝総ターン ${s.n}・1ターン <b>${s.secPerTurn.toFixed(1)}秒</b>・連打率 <b>${s.rep}%</b>・技を使ったターン ${s.techTurns}・放圧 ${REC.vents}回（防いだ攻撃 ${REC.dodged}）・落ちた技 ${(REC.skills.tank.fell||0)+(REC.skills.medic.fell||0)+(REC.skills.stoker.fell||0)}回・暴発 味方${REC.burstsP} 敵${REC.burstsE}</p>`;
   $('r-table').innerHTML = h;
   document.querySelectorAll('#qs button').forEach(b=>b.classList.remove('sel'));
   REC.q = {}; buildOut(); show('s-result');
@@ -886,15 +895,15 @@ function buildOut(){
   L.push(`[選択の内訳] ` + REC.picks.map(p=>`${p.node}:${p.pick}${p.others.length?`(他:${p.others.join('/')})`:'(一本道)'}${(p.ms/1000).toFixed(1)}s`).join(' '));
   if (REC.choices.length) L.push(`[出来事/休憩] ` + REC.choices.map(c=>`${c.node}:${c.pick}${(c.ms/1000).toFixed(1)}s`).join(' '));
   L.push(`[宝] ` + (REC.items.length ? REC.items.map(i=>`${i.node}:${i.short}`).join(' ') : 'なし'));
-  L.push(`[戦闘] 総ターン ${s.n} / 1ターン ${s.secPerTurn.toFixed(1)}s / 連打率 ${s.rep}% / 技を使ったターン ${s.techTurns} / 考える時間 平均${(s.think/1000).toFixed(1)}s 中央値${(s.thinkMed/1000).toFixed(1)}s / 放圧 ${REC.vents}回 防いだ攻撃 ${REC.dodged}回 / 暴発 味方${REC.burstsP} 敵${REC.burstsE} / 蒸気 ${REC.steam}回 吸気 ${REC.drained}回 反撃 ${REC.countered}回 / 分布 ${Object.entries(s.dist).map(([k,v])=>`${k}${v}`).join(' ')}`);
+  L.push(`[戦闘] 総ターン ${s.n} / 1ターン ${s.secPerTurn.toFixed(1)}s / 連打率 ${s.rep}% / 技を使ったターン ${s.techTurns} / 考える時間 平均${(s.think/1000).toFixed(1)}s 中央値${(s.thinkMed/1000).toFixed(1)}s / 放圧 ${REC.vents}回 防いだ攻撃 ${REC.dodged}回 / 落ちた技 ${(REC.skills.tank.fell||0)+(REC.skills.medic.fell||0)+(REC.skills.stoker.fell||0)}回 / 暴発 味方${REC.burstsP} 敵${REC.burstsE} / 蒸気 ${REC.steam}回 吸気 ${REC.drained}回 反撃 ${REC.countered}回 / 分布 ${Object.entries(s.dist).map(([k,v])=>`${k}${v}`).join(' ')}`);
   L.push(`[敵別] ` + s.enemies.map(e=>`${e.id}:${e.win}/${e.n}戦 平均${e.avgT}T 暴発比${e.burstRate}% 過熱${e.heatPer}/戦 被害${e.takenPer}/戦`).join(' | '));
   L.push(`[過熱のターン] ` + REC.battles.map(b=>`${b.node}${b.id}@${b.pp0}:${b.heat.join(',')||'-'}/${b.turns}${b.win?'':'✗'}`).join(' '));
-  L.push(`[人形] ${!tk.hadAuto?'なし':tk.party.filter(Boolean).map(m=>`${ROLE(m.role).name}${DEF(m.type).name} `+(m.brokeAt?`壊れた(${m.brokeAt})`:m.alive?'生存':'壊れた')).join('・')} / [持ち帰り] 金+${tk.gold}${tk.goldLost?`(失${tk.goldLost})`:''} 素材+${tk.mat} → 金${META.gold} 素材${META.mat} 武器${META.weapon} 人形${partyText(META.party,false)}`);
+  L.push(`[人形] ${!tk.hadAuto?'なし':tk.party.filter(Boolean).map(m=>`${ROLE(m.role).name}=${DEF(m.type).name} `+(m.brokeAt?`壊れた(${m.brokeAt})`:m.alive?'生存':'壊れた')).join('・')} / [持ち帰り] 金+${tk.gold}${tk.goldLost?`(失${tk.goldLost})`:''} 素材+${tk.mat} → 金${META.gold} 素材${META.mat} 武器${META.weapon} 人形${partyText(META.party,false)}`);
   L.push(`[役の技] ` + roleLine());
   L.push(`[敵の狙い] ` + hitsLine());
   L.push(`[設計図] 拾得 ${tk.bpFound.length?tk.bpFound.map(id=>DEF(id).name).join('・'):'なし'} / 所持 ${META.blueprints.map(id=>DEF(id).name).join('・')} / 工房 ${META.ext.workshop?'開設済み':'未開設'}`);
   L.push(`[Q1 ノード迷い] ${REC.q.q1||'未回答'} / [Q2 戦闘迷い] ${REC.q.q2||'未回答'} / [Q3 もう1回] ${REC.q.q3||'未回答'} / [Q4 敵で攻め方] ${REC.q.q4||'未回答'} / [Q5 絵で性質] ${REC.q.q5||'未回答'} / [Q6 圧の配分] ${REC.q.q6||'未回答'}`);
-  const byB = {}; REC.turns.forEach(t=>{ (byB[t.b]=byB[t.b]||[]).push(`${t.turn}:${t.cmd.slice(0,2)}@${t.ppBefore}/${t.epp}${t.plan?'+'+t.plan:''}`); });
+  const byB = {}; REC.turns.forEach(t=>{ (byB[t.b]=byB[t.b]||[]).push(`${t.turn}:${t.cmd.slice(0,2)}@${t.ppBefore}/${t.epp}${t.plan?'+'+t.plan:''}${t.fell?'×'+t.fell:''}${t.burst?'!':''}`); });   // p4-0.2.0＝×＝落ちた技・!＝味方の暴発
   L.push(`[手順] ` + REC.battles.map((b,i)=>`${b.node}${b.id}@${b.pp0}: ${(byB[i]||[]).join(' ')}`).join(' | '));
   $('out').value = L.join('\n');
 }
@@ -923,7 +932,7 @@ let resetArmed=false;
 $('b-reset').addEventListener('click', ()=>{ if (!resetArmed){ resetArmed=true; $('b-reset').textContent='本当に初期化する？（もう1回押す）'; setTimeout(()=>{ resetArmed=false; $('b-reset').textContent='すべて初期化（部屋・遠征）'; }, 4000); return; } META=newMeta(); RUN=null; REC=null; saveMeta(); saveRun(); resetArmed=false; $('b-reset').textContent='すべて初期化（部屋・遠征）'; $('save-msg').textContent='初期化しました'; renderRoom(); });
 $('ver').textContent = VER;
 preloadImages(); loadAll(); renderRoom();
-window.OP = { floorSeed, get S(){return S;}, get RUN(){return RUN;}, get META(){return META;}, get REC(){return REC;}, TUNE, ROLES, act, togglePlan, newRun, pickNode, reachable, genMap, nodeDone, evPick, rsPick, startBattle, renderRoom, showMap, loadAll, summarize, buildOut, resolveNode, cur, makeAuto, scrapAuto, openExt, buyBlueprint, migrateMeta, hasCmd, aliveParty };
+window.OP = { floorSeed, project, get S(){return S;}, get RUN(){return RUN;}, get META(){return META;}, get REC(){return REC;}, TUNE, ROLES, act, togglePlan, newRun, pickNode, reachable, genMap, nodeDone, evPick, rsPick, startBattle, renderRoom, showMap, loadAll, summarize, buildOut, resolveNode, cur, makeAuto, scrapAuto, openExt, buyBlueprint, migrateMeta, hasCmd, aliveParty };
 </script>
 </body>
 </html>
