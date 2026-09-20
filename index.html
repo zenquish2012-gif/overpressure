@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="OP">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>OVERPRESSURE Phase 2</title>
+<title>OVERPRESSURE Phase 3</title>
 <style>
   :root { --bg:#14100c; --panel:#221a12; --line:#6b5330; --brass:#d9a441; --brass2:#8a6a2b; --text:#f2e6cf; --dim:#a08f74;
           --hp:#c94b3a; --hpbg:#3a1d19; --pp:#4fb3d9; --ppbg:#16303a; --warn:#ff6a3d; --ok:#7bc96f;
@@ -25,8 +25,8 @@
   .dim { color:var(--dim); font-size:15px; }
   .warn { color:var(--warn); font-weight:700; }
   .ok { color:var(--ok); font-weight:700; }
-  .box { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:6px 10px; }
-  button { font:inherit; color:var(--text); background:#2c2117; border:2px solid var(--brass2); border-radius:12px; padding:6px 6px; min-height:54px; width:100%; text-align:center; }
+  .box { background:linear-gradient(#2a2118,#1a140f); border:2px solid #d9c9a6; border-radius:4px; box-shadow:inset 0 0 0 2px #14100c, inset 0 0 0 3px var(--brass2); padding:8px 12px; }   /* p3＝FF6 の窓の形〈二重の枠・中は暗色〉を本作の色〈鉄と真鍮〉で */
+  button { font:inherit; color:var(--text); background:#2c2117; border:2px solid var(--brass2); border-radius:5px; padding:6px 6px; min-height:54px; width:100%; text-align:center; }
   button:active { background:#3d2e1e; }
   button:disabled { opacity:.38; }
   button.big { font-size:20px; min-height:60px; border-color:var(--brass); }
@@ -45,15 +45,26 @@
   .bar.pp.hot > i { background:var(--warn); }
   .lbl { display:flex; justify-content:space-between; font-size:15px; }
   .field { flex:1; display:flex; flex-direction:column; gap:5px; min-height:0; }
-  .stage { position:relative; flex:1; min-height:80px; border:1px solid var(--line); border-radius:10px; background:linear-gradient(#1c1610,#120e0a); overflow:hidden; }
+  .stage { position:relative; flex:1; min-height:96px; border:2px solid #d9c9a6; border-radius:4px; box-shadow:inset 0 0 0 2px #14100c; background:linear-gradient(#1c1610,#120e0a); overflow:hidden; }
+  .stage.f1 { background:url(img/bg_f1.png) center/cover no-repeat #120e0a; image-rendering:pixelated; }
+  /* p3＝敵のスプライト（横向き＝敵は左・味方は右）。外側＝揺れと白点滅・内側＝コマと熱の光 */
+  .sprw { position:absolute; left:8px; bottom:6px; display:none; }
+  .sprw.on { display:block; }
+  .sprw.hit { animation:shake .2s; }
+  .sprw.white { filter:brightness(3.5) saturate(0); }
+  .spr { background-repeat:no-repeat; image-rendering:pixelated; image-rendering:crisp-edges; }
+  .spr.hot { animation:hot .8s infinite alternate; }
+  @keyframes shake { 0%{transform:translateX(0)} 25%{transform:translateX(-4px)} 50%{transform:translateX(4px)} 75%{transform:translateX(-4px)} 100%{transform:translateX(0)} }
+  @keyframes hot { from{filter:drop-shadow(0 0 2px #ff6a3d)} to{filter:drop-shadow(0 0 8px #ff6a3d) brightness(1.15)} }
+  .pkspr { float:right; margin:0 0 4px 8px; background-repeat:no-repeat; image-rendering:pixelated; }
   .fig { position:absolute; display:flex; align-items:center; justify-content:center; font-size:13px; color:#000; font-weight:700; }
-  .fig.enemy { width:64px; height:64px; background:#9a8f7a; border-radius:12px; left:50%; top:8px; transform:translateX(-50%); }
+  .fig.enemy { width:64px; height:64px; background:#9a8f7a; border-radius:12px; left:12px; bottom:8px; }   /* p3＝絵が無い時の図形（横向き＝左） */
   .fig.enemy.b { background:#7fa88a; border-radius:50%; width:58px; height:58px; }
   .fig.enemy.boss { width:80px; height:80px; background:#b07a4a; }
-  .fig.hero { width:44px; height:44px; background:var(--brass); border-radius:8px; left:30%; bottom:8px; transform:translateX(-50%); }
-  .fig.auto { width:44px; height:44px; background:#8fb7c9; border-radius:50%; left:64%; bottom:8px; transform:translateX(-50%); }
+  .fig.hero { width:44px; height:44px; background:var(--brass); border-radius:8px; right:14px; bottom:8px; }
+  .fig.auto { width:44px; height:44px; background:#8fb7c9; border-radius:50%; right:72px; bottom:8px; }
   .fig.hit { animation:hit .35s; }
-  @keyframes hit { 0%{filter:brightness(2)} 50%{transform:translateX(-50%) translateY(6px)} 100%{filter:none} }
+  @keyframes hit { 0%{filter:brightness(2)} 50%{transform:translateY(6px)} 100%{filter:none} }
   .fig.dead { opacity:.25; }
   .next { text-align:left; font-size:15px; color:var(--dim); margin-top:4px; }
   .next b { color:var(--text); }
@@ -103,7 +114,7 @@
 <!-- ===== 自分の部屋 ===== -->
 <section class="scr on" id="s-room">
   <div class="row" style="justify-content:space-between;align-items:baseline"><h1>OVERPRESSURE</h1><span class="ver" id="ver"></span></div>
-  <p class="dim">Phase 2 敵の性質・人形・宝（図形のみ・数値は仮置き）</p>
+  <p class="dim">Phase 3 絵＝フロア1の敵4種と背景（主人公・人形は図形のまま・数値は仮置き）</p>
   <div class="scrollp">
     <div class="box">
       <h2>自分の部屋</h2>
@@ -157,6 +168,7 @@
       <div class="next" id="e-next"></div>
     </div>
     <div class="stage" id="stage">
+      <div class="sprw" id="spr-w"><div class="spr" id="spr-e"></div></div>
       <div class="fig enemy" id="f-enemy">A</div>
       <div class="fig hero" id="f-hero">主</div>
       <div class="fig auto" id="f-auto">人形</div>
@@ -238,6 +250,8 @@
       <div class="row"><button data-q="q3" data-v="はい">はい</button><button data-q="q3" data-v="どちらとも">どちらとも</button><button data-q="q3" data-v="いいえ">いいえ</button></div>
       <p><b>Q4 敵によって攻め方を変えましたか</b></p>
       <div class="row"><button data-q="q4" data-v="はい">はい</button><button data-q="q4" data-v="半々">半々</button><button data-q="q4" data-v="いいえ">いいえ</button></div>
+      <p><b>Q5 敵の絵で性質が分かりましたか</b></p>
+      <div class="row"><button data-q="q5" data-v="はい">はい</button><button data-q="q5" data-v="半々">半々</button><button data-q="q5" data-v="いいえ">いいえ</button></div>
     </div>
     <div class="box">
       <button id="b-copy">結果をコピー</button>
@@ -249,7 +263,7 @@
 </div>
 <script>
 'use strict';
-const VER = 'p2-0.3.0';
+const VER = 'p3-0.1.0';
 // ===== 調整値（すべて仮置き＝実機の感触で動かす）=====
 const TUNE = {
   hero:{hp:100}, overflow:100,
@@ -309,10 +323,40 @@ const TUNE = {
   rest:{ overflowUp:10 },
   event:{ name:'蒸気だまり', text:'配管の裂け目から蒸気が噴いている。', a:{label:'蒸気を汲む', gold:15, hp:-10}, b:{label:'一息つく', heal:15} },
   blueprint:{ start:['shield','cannon'], eliteDrop:0.5, bossDrop:1.0, shopCost:150, scrapMat:1 },   // 設計図の出方（仮決め）
+  // --- Phase 3（絵）＝表示だけ。戦闘の数値には触らない ---
+  sprite:{ on:true, scale:2.0, eliteScale:1.25, hotAt:70, pickScale:1.5,        // 表示倍率〈1ドット≒2pt・ステージに収まらなければ自動で縮む〉・誰を出す画面は1.5・強敵／ボスは一回り大きく・敵の圧≥70で絵に熱の光
+           sheets:{ A:{file:'A.png',cw:64,ch:64}, B:{file:'B.png',cw:72,ch:80}, C:{file:'C.png',cw:64,ch:64}, A2:{file:'A2.png',cw:64,ch:64} },   // 1巡目＝F1 の4種（A改＝A の色替え）
+           bg:{ 1:'bg_f1.png' } },
+  fx:{ attackMs:150, shakeMs:200, whiteMs:80 },                                  // 攻撃コマ・揺れ・白点滅＝判断を待たせない長さ（05 §1-1）
   room:{ make:{mat:3}, weapon:{costs:[50,100,150], dmgPer:3},
          ext:[ {id:'shop', name:'買取所', cost:60, note:'素材を金に換える'}, {id:'workshop', name:'工房', cost:120, note:'未所持の設計図を金で買える', impl:true}, {id:'store', name:'倉庫', cost:80, note:'出撃に持ち込む品を置く'}, {id:'bed', name:'寝台', cost:100, note:'出撃時のバフ'} ] },
 };
 const KEY_META='op1_meta', KEY_RUN='op1_run';
+// ===== p3＝画像（読めなければ従来の図形で描く＝PRINT RUN と同じ逃げ道）=====
+const IMG = {};
+function preloadImages(){
+  const load = (key, file) => { const im = new Image(); im.onload = ()=>{ IMG[key] = true; }; im.onerror = ()=>{ IMG[key] = false; }; im.src = 'img/' + file + '?v=' + VER; };
+  Object.entries(TUNE.sprite.sheets).forEach(([id, sh]) => load(id, sh.file));
+  Object.entries(TUNE.sprite.bg).forEach(([f, file]) => load('bg' + f, file));
+}
+const imgStatus = () => Object.keys(TUNE.sprite.sheets).concat(Object.keys(TUNE.sprite.bg).map(f=>'bg'+f)).map(k=>`${k}:${IMG[k]===true?'○':IMG[k]===false?'×':'?'}`).join(' ');
+const SHEET = id => (TUNE.sprite.on && IMG[id] === true) ? TUNE.sprite.sheets[id] : null;
+function sprStyle(el, id, frame, scale){   // 1コマを background-size で拡大（transform は外側の揺れに使う）
+  const sh = TUNE.sprite.sheets[id], w = Math.round(sh.cw*scale), h = Math.round(sh.ch*scale);
+  el.style.width = w+'px'; el.style.height = h+'px';
+  el.style.backgroundImage = `url(img/${sh.file}?v=${VER})`; el.style.backgroundSize = `${w*2}px ${h}px`; el.style.backgroundPosition = `${-frame*w}px 0`;
+}
+let sprScale = 1;
+function fitSprite(){   // ステージの高さに収める（上限＝TUNE.sprite.scale）
+  if (!S || !S.sprId) return;
+  const sh = TUNE.sprite.sheets[S.sprId], st = $('stage');
+  const cap = TUNE.sprite.scale * (S.boss || S.elite ? TUNE.sprite.eliteScale : 1);
+  sprScale = Math.max(0.75, Math.min(cap, (st.clientHeight - 12) / sh.ch, (st.clientWidth * 0.5) / sh.cw));
+  sprStyle($('spr-e'), S.sprId, S.sprFrame||0, sprScale);
+}
+function enemyPose(frame){ if (!S || !S.sprId) return; S.sprFrame = frame; sprStyle($('spr-e'), S.sprId, frame, sprScale); }
+function enemyAttackFx(){ if (!S || !S.sprId) return; enemyPose(1); setTimeout(()=>enemyPose(0), TUNE.fx.attackMs); }
+window.addEventListener('resize', fitSprite);
 // ===== 状態 =====
 let META, RUN, REC, S;
 const $ = id => document.getElementById(id);
@@ -568,7 +612,9 @@ function preBattle(n){
   const alive = aliveParty();
   if (alive.length < 2){ RUN.active = alive.length ? alive[0].i : -1; saveRun(); startBattle(n); return; }
   const t = ENEMY(n.enemy);
-  $('pk-enemy').innerHTML = `<p><b>${t.name}${n.type==='boss'?'（ボス）':n.type==='elite'?'（強敵）':''}</b>　HP ${t.hp}・開幕の圧 <b>${n.pp0}</b></p><p>性質＝${t.trait}</p><p class="dim">主人公 ${RUN.hero}/${TUNE.hero.hp}・圧 ${RUN.pp}${RUN.items.length?`・宝＝${RUN.items.map(id=>ITEM(id).short).join(' ')}`:''}</p>`;
+  const sp = SHEET(t.id) ? `<div class="pkspr" id="pk-spr"></div>` : '';
+  $('pk-enemy').innerHTML = sp + `<p><b>${t.name}${n.type==='boss'?'（ボス）':n.type==='elite'?'（強敵）':''}</b>　HP ${t.hp}・開幕の圧 <b>${n.pp0}</b></p><p>性質＝${t.trait}</p><p class="dim">主人公 ${RUN.hero}/${TUNE.hero.hp}・圧 ${RUN.pp}${RUN.items.length?`・宝＝${RUN.items.map(id=>ITEM(id).short).join(' ')}`:''}</p>`;
+  if (sp) sprStyle($('pk-spr'), t.id, 0, TUNE.sprite.pickScale);
   alive.forEach((x,k)=>{ const a = DEF(x.m.type), b = $('b-pk-'+k); b.style.display=''; b.innerHTML = `<b>${a.name}（${a.role}）HP ${x.m.hp}/${a.hp}</b><small>${TUNE.moods[x.m.mood].name}＝${typeof a.desc==='string' ? a.desc.replace('{need}', a.need[TUNE.moods[x.m.mood].key]) : a.desc[TUNE.moods[x.m.mood].key]}</small>`; b.dataset.slot = x.i; });
   show('s-pick'); scrEnter('other'); choiceShownAt = performance.now();
 }
@@ -586,10 +632,15 @@ function startBattle(n){
   S = { hero:RUN.hero, auto:m?m.hp:0, pp:RUN.pp, mood:m?(m.mood||0):0, e:{def:t, hp:t.hp, pp:n.pp0, skip:false}, turn:0, skip:false, skipNow:false, guard:false, over:false, boss:n.type==='boss', taken:0 };
   const sp = TUNE.startPP + BON().start; if (S.pp < sp) S.pp = sp;
   REC.bt = { id:t.id, pp0:n.pp0, type:n.type, node:`${RUN.floor}-${RUN.li+1}`, floor:RUN.floor, auto:tacticKey().split('/')[0], hit:0, burst:0, taken:0, turns:0, heat:[], start:performance.now(), win:null };
+  S.elite = n.type==='elite';
+  S.sprId = SHEET(t.id) ? t.id : null; S.sprFrame = 0;                            // p3＝絵があれば絵・無ければ図形
   $('f-enemy').textContent = t.id; $('f-enemy').className = 'fig enemy' + ((t.id==='B'||t.id==='C'||t.id==='E')?' b':'') + (S.boss?' boss':'');
+  $('f-enemy').style.display = S.sprId ? 'none' : '';
+  $('spr-w').className = 'sprw' + (S.sprId ? ' on' : ''); $('spr-e').className = 'spr';
+  $('stage').className = 'stage' + (IMG['bg'+RUN.floor] === true ? ' f'+RUN.floor : '');
   $('f-hero').className='fig hero'; $('f-auto').className='fig auto'; $('f-auto').textContent = AUTO() ? AUTO().name.slice(0,2) : '人形';
   setLog(`<b>${t.name}${S.boss?'（ボス）':''}</b> が現れた。敵の圧は <b>${n.pp0}</b> から。`);
-  show('s-battle'); scrEnter('battle'); render(); armCmds();
+  show('s-battle'); scrEnter('battle'); fitSprite(); render(); armCmds();
 }
 function bar(id, v, max){ $(id).style.width = Math.max(0, Math.min(100, v/max*100)) + '%'; }
 function enemyNext(){
@@ -605,6 +656,7 @@ function render(){
   $('e-name').textContent = d.name + (S.boss?'（ボス）':''); $('e-trait').textContent = '（'+d.trait+'）';
   $('e-hp-t').textContent = `${e.hp}/${d.hp}`; bar('e-hp', e.hp, d.hp);
   $('e-pp-t').textContent = `${e.pp}/${TUNE.overflow}`; bar('e-pp', e.pp, TUNE.overflow); $('e-pp-bar').classList.toggle('hot', e.pp>=70);
+  if (S.sprId){ $('spr-e').classList.toggle('hot', e.pp >= TUNE.sprite.hotAt && e.hp > 0); $('spr-w').style.opacity = e.hp > 0 ? '' : '.25'; }
   $('e-next').innerHTML = enemyNext();
   const b = BON(); const bs = []; if (b.atk) bs.push(`攻+${b.atk}`); if (b.armor) bs.push(`被害-${b.armor}`); if (b.heat) bs.push(`過熱+${b.heat}`); if (b.start) bs.push(`開幕+${b.start}`); if (b.ovf) bs.push(`溢れ+${b.ovf}`);
   $('h-bonus').textContent = bs.length ? '（宝 '+bs.join(' ')+'）' : '';
@@ -617,7 +669,10 @@ function render(){
   $('f-auto').classList.toggle('dead', S.auto<=0);
 }
 function setLog(html){ $('log').innerHTML = html; }
-function hit(fid){ const f=$(fid); f.classList.remove('hit'); void f.offsetWidth; f.classList.add('hit'); }
+function hit(fid){
+  const f=$(fid); f.classList.remove('hit'); void f.offsetWidth; f.classList.add('hit');
+  if (fid==='f-enemy' && S && S.sprId){ const w=$('spr-w'); w.classList.remove('hit'); void w.offsetWidth; w.classList.add('hit'); w.classList.add('white'); setTimeout(()=>w.classList.remove('white'), TUNE.fx.whiteMs); }
+}
 function flash(){ const x=document.createElement('div'); x.className='flash'; $('stage').appendChild(x); setTimeout(()=>x.remove(),600); }
 let armedAt = 0;
 function hasCmd(k){ const c=TUNE.cmd[k]; return !c.weapon || RUN.weapon >= c.weapon; }
@@ -654,6 +709,7 @@ function act(k){
   if (S.over) return;
   if (!hasCmd(k)) return;
   const c = TUNE.cmd[k], e = S.e, d = e.def, bt = REC.bt;
+  if (S.pp < c.need) return;   // p3＝ボタンの無効化と同じ条件をここでも守る（PC検査で API 直叩きが圧をマイナスにした＝実機の操作では起きない）
   const rec = { b:REC.battles.length, e:d.id, pp0:bt.pp0, turn:++S.turn, ppBefore:S.pp, epp:e.pp, cmd:c.name, tactic:tacticKey(), think:Math.round(performance.now()-armedAt) };
   REC.turns.push(rec); bt.turns++;
   let msg = '';
@@ -702,7 +758,8 @@ function checkPartyBurst(){
 function enemyAct(autoGuard){
   const e=S.e, d=e.def; let m='';
   if (e.skip){ e.skip=false; return ' 敵は反動で動けない。'; }
-  if (d.vent && e.pp >= d.vent.need){ e.pp=0; e.hp=Math.min(d.hp, e.hp+d.vent.heal); return ` 敵は放圧＝HP+${d.vent.heal}。`; }
+  if (d.vent && e.pp >= d.vent.need){ e.pp=0; e.hp=Math.min(d.hp, e.hp+d.vent.heal); enemyAttackFx(); return ` 敵は放圧＝HP+${d.vent.heal}。`; }
+  enemyAttackFx();
   let dmg, name;
   if (d.big && e.pp >= d.big.need){ dmg=d.big.dmg; name=d.big.name; e.pp -= d.big.need; }
   else { dmg=d.atk; name='攻撃'; e.pp += d.ppGain; }
@@ -811,7 +868,7 @@ function showResult(){
 function buildOut(){
   const s = summarize(), tk = REC.take, L = [];
   L.push(`[OVERPRESSURE Phase 2] ${VER} ${new Date().toLocaleString('ja-JP')}`);
-  L.push(`[環境] ${window.navigator.standalone?'ホーム画面':'ブラウザ'} / 窓 ${innerWidth}x${innerHeight} / dpr ${devicePixelRatio} / ${location.protocol}`);
+  L.push(`[環境] ${window.navigator.standalone?'ホーム画面':'ブラウザ'} / 窓 ${innerWidth}x${innerHeight} / dpr ${devicePixelRatio} / ${location.protocol} / 画像 ${imgStatus()} 倍率${sprScale.toFixed(2)}`);
   L.push(`[ラン] ${tk.result} / 所要 ${Math.round(s.total/1000)}秒（マップ${Math.round(REC.t.map/1000)} 戦闘${Math.round(REC.t.battle/1000)} 他${Math.round(REC.t.other/1000)}）/ フロア ${tk.floor}/${TUNE.floors} / ノード ${tk.nodes}/${RUN.map.length*TUNE.floors} / 戦闘 ${REC.battles.length} / 再開 ${tk.resumed}回 / 種 ${RUN.seed}`);
   if (REC.floors.length) L.push(`[フロア] ` + REC.floors.map(f=>`F${f.floor}:${f.sec}秒まで(戦闘${f.battles})`).join(' '));
   L.push(`[経路] ` + tk.path.join(' → '));
@@ -826,7 +883,7 @@ function buildOut(){
   L.push(`[人形の選択] 選択 ${s.autoPicks}回（2体とも動けた戦闘）/ 考える時間 中央値${(s.apMed/1000).toFixed(1)}s 平均${(s.apAvg/1000).toFixed(1)}s / 敵×人形 ${Object.entries(s.byED).map(([e,o])=>`${e}:${Object.entries(o).map(([d,v])=>d+v).join('')}`).join(' ')||'-'} / 内訳 ${REC.autoPicks.map(x=>`${x.node}${x.enemy}@${x.pp0}:${x.pick}(他:${x.other.join('/')})${(x.ms/1000).toFixed(1)}s`).join(' ')||'-'}`);
   L.push(`[人形の出番] ` + (Object.entries(s.byD).map(([d,o])=>`${d==='-'?'なし':DEF(d).name}:${o.win}/${o.n}戦 ${o.turns}T(${o.foes.join(',')}) 主人公の攻撃${s.heroDist[d]?Math.round(s.heroDist[d].atk/s.heroDist[d].n*100):0}%`).join(' | ') || '-'));
   L.push(`[設計図] 拾得 ${tk.bpFound.length?tk.bpFound.map(id=>TUNE.autos.find(x=>x.id===id).name).join('・'):'なし'} / 所持 ${META.blueprints.map(id=>TUNE.autos.find(x=>x.id===id).name).join('・')} / 工房 ${META.ext.workshop?'開設済み':'未開設'}`);
-  L.push(`[Q1 ノード迷い] ${REC.q.q1||'未回答'} / [Q2 戦闘迷い] ${REC.q.q2||'未回答'} / [Q3 もう1回] ${REC.q.q3||'未回答'} / [Q4 敵で攻め方] ${REC.q.q4||'未回答'}`);
+  L.push(`[Q1 ノード迷い] ${REC.q.q1||'未回答'} / [Q2 戦闘迷い] ${REC.q.q2||'未回答'} / [Q3 もう1回] ${REC.q.q3||'未回答'} / [Q4 敵で攻め方] ${REC.q.q4||'未回答'} / [Q5 絵で性質] ${REC.q.q5||'未回答'}`);
   const byB = {}; REC.turns.forEach(t=>{ (byB[t.b]=byB[t.b]||[]).push(`${t.turn}:${t.cmd.slice(0,2)}@${t.ppBefore}/${t.epp}${tacticShort(t.tactic)}`); });
   L.push(`[手順] ` + REC.battles.map((b,i)=>`${b.node}${b.id}@${b.pp0}: ${(byB[i]||[]).join(' ')}`).join(' | '));
   $('out').value = L.join('\n');
@@ -858,7 +915,7 @@ $('b-import').addEventListener('click', ()=>{ try{ const o=JSON.parse($('save-io
 let resetArmed=false;
 $('b-reset').addEventListener('click', ()=>{ if (!resetArmed){ resetArmed=true; $('b-reset').textContent='本当に初期化する？（もう1回押す）'; setTimeout(()=>{ resetArmed=false; $('b-reset').textContent='すべて初期化（部屋・遠征）'; }, 4000); return; } META=newMeta(); RUN=null; REC=null; saveMeta(); saveRun(); resetArmed=false; $('b-reset').textContent='すべて初期化（部屋・遠征）'; $('save-msg').textContent='初期化しました'; renderRoom(); });
 $('ver').textContent = VER;
-loadAll(); renderRoom();
+preloadImages(); loadAll(); renderRoom();
 window.OP = { floorSeed, get S(){return S;}, get RUN(){return RUN;}, get META(){return META;}, get REC(){return REC;}, TUNE, act, newRun, pickNode, reachable, genMap, nodeDone, evPick, rsPick, pkPick, preBattle, renderRoom, showMap, loadAll, summarize, buildOut, resolveNode, cur, makeAuto, scrapAuto, openExt, buyBlueprint, migrateMeta, hasCmd, tacticKey, aliveParty };
 </script>
 </body>
