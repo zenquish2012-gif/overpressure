@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="OP">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>OVERPRESSURE Phase 2′</title>
+<title>OVERPRESSURE</title>
 <style>
   :root { --bg:#14100c; --panel:#221a12; --line:#6b5330; --brass:#d9a441; --brass2:#8a6a2b; --text:#f2e6cf; --dim:#a08f74;
           --hp:#c94b3a; --hpbg:#3a1d19; --pp:#4fb3d9; --ppbg:#16303a; --warn:#ff6a3d; --ok:#7bc96f;
@@ -47,6 +47,12 @@
   .field { flex:1; display:flex; flex-direction:column; gap:5px; min-height:0; }
   .stage { position:relative; flex:1; min-height:96px; border:2px solid #d9c9a6; border-radius:4px; box-shadow:inset 0 0 0 2px #14100c; background:linear-gradient(#1c1610,#120e0a); overflow:hidden; }
   .stage.f1 { background:url(img/bg_f1.png) center/cover no-repeat #120e0a; image-rendering:pixelated; }
+  .stage.f2 { background:url(img/bg_f2.png) center/cover no-repeat #120e0a; image-rendering:pixelated; }
+  /* p5＝味方のスプライト〈右側・横1列・左向き〉。位置と大きさは fitAllies() が決める。絵が無い役は従来の図形 */
+  .sprw.ally { left:auto; }
+  .sprw.ally.dead { opacity:.25; }
+  .sprw.ally.act { animation:lunge .15s; }
+  @keyframes lunge { 0%{transform:translateX(0)} 50%{transform:translateX(-6px)} 100%{transform:translateX(0)} }
   /* p3＝敵のスプライト（横向き＝敵は左・味方は右）。外側＝揺れと白点滅・内側＝コマと熱の光 */
   .sprw { position:absolute; left:8px; bottom:6px; display:none; }
   .sprw.on { display:block; }
@@ -147,8 +153,8 @@
       <h2>ルール</h2>
       <p>マップの<b>光っているノード</b>を選んで進む。先は全部見える（敵の種類・<b>敵の開幕の圧</b>・宝の中身）。<b>同じ層に並ぶ戦闘は敵の種類が違う</b>。9個目がボス。<b>ボスを倒すと次のフロア（新しい地図・別の敵）へ。2フロアで1ラン。</b></p>
       <p><b>敵は種類ごとに圧の性質が違う</b>（画面の1行と「次:」を見て攻め方を変える）。<b>宝はそのランだけ効く物</b>（持ち帰れない）。</p>
-      <p><b>4名固定</b>＝<b>機関士</b>（きかんし・主人公＝火力）・<b>缶番</b>（かまばん＝盾）・<b>油差し</b>（あぶらさし＝回復）・<b>火夫</b>（かふ＝焚き）。<b>圧は4人で1本</b>＝全員の攻撃で溜まり、技で減る。溢れると全員が暴発する。</p>
-      <p><b>戦闘では人形の行をタップすると「技」に切り替わる</b>（もう一度で「溜める」に戻る）。<b>機関士の手を押すとターンが進む</b>＝機関士→缶番→油差し→火夫の順に動き、圧が足りない技は溜めるに落ちる。<b>溢れの判定はターンの終わりに1回</b>（途中で一時的に溢れても、技で下げれば暴発しない）。<b>機関士のボタンには「その手の後の圧」が出る</b>（計画した技を織り込み・溢れるなら「溢れ」）。缶番の<b>挑発</b>＝そのターンの敵の攻撃を自分が受ける／油差しの<b>整備</b>＝全員HP回復／火夫の<b>過熱</b>＝敵の圧を上げる。機関士の<b>放圧 VENT</b>＝そのターンは全員が敵の攻撃を受けない（圧は0へ）。</p>
+      <p><b>4名固定</b>＝<b>機関士</b>（きかんし・主人公＝火力）・<b>罐番</b>（かまばん＝盾）・<b>注油手</b>（ちゅうゆしゅ＝回復）・<b>投炭手</b>（とうたんしゅ＝焚き）。<b>圧は4人で1本</b>＝全員の攻撃で溜まり、技で減る。溢れると全員が暴発する。</p>
+      <p><b>戦闘では人形の行をタップすると「技」に切り替わる</b>（もう一度で「溜める」に戻る）。<b>機関士の手を押すとターンが進む</b>＝機関士→罐番→注油手→投炭手の順に動き、圧が足りない技は溜めるに落ちる。<b>溢れの判定はターンの終わりに1回</b>（途中で一時的に溢れても、技で下げれば暴発しない）。<b>機関士のボタンには「その手の後の圧」が出る</b>（計画した技を織り込み・溢れるなら「溢れ」）。罐番の<b>挑発</b>＝そのターンの敵の攻撃を自分が受ける／注油手の<b>整備</b>＝全員HP回復／投炭手の<b>過熱</b>＝敵の圧を上げる。機関士の<b>放圧 VENT</b>＝そのターンは全員が敵の攻撃を受けない（圧は0へ）。</p>
       <p><b>敵の攻撃は誰に来るか分からない</b>（敵ごとに偏りあり・砲は全員に）。</p>
       <p><b>勝てば</b>金と素材と生き残った人形を持ち帰る。<b>機関士が倒れると</b>そのランの金を失い、素材と拾った設計図だけ持ち帰る。人形は3体とも壊れるが<b>設計図は残る</b>。</p>
       <p>ノードに着くたび自動保存。閉じても「続きから」でマップに戻る（戦闘の途中は保存しない）。</p>
@@ -189,6 +195,7 @@
       <div class="fig enemy" id="f-enemy">A</div>
       <div class="fig hero" id="f-hero">機</div>
       <div class="fig auto a0" id="f-a0">盾</div><div class="fig auto a1" id="f-a1">整</div><div class="fig auto a2" id="f-a2">焚</div>
+      <div class="sprw ally" id="spr-hw"><div class="spr" id="spr-h"></div></div><div class="sprw ally" id="spr-a0w"><div class="spr" id="spr-a0"></div></div><div class="sprw ally" id="spr-a1w"><div class="spr" id="spr-a1"></div></div><div class="sprw ally" id="spr-a2w"><div class="spr" id="spr-a2"></div></div>
     </div>
     <div class="party" id="party"></div>
     <div class="box" style="padding:4px 12px"><div class="lbl"><span><b>味方の圧</b> <span class="dim" id="h-bonus"></span></span><span id="p-pp-t"></span></div><div class="bar pp" id="p-pp-bar"><i id="p-pp"></i></div></div>
@@ -263,7 +270,7 @@
 </div>
 <script>
 'use strict';
-const VER = 'p4-0.2.0';
+const VER = 'p5-0.1.0';
 // ===== 調整値（すべて仮置き＝実機の感触で動かす）=====
 const TUNE = {
   hero:{hp:100, name:'機関士', en:'ENGINEER', kana:'きかんし'}, overflow:100,   // p4-0.2.0＝役の正式名称（マスター決定 2026-09-20＝機関区の持ち場の言葉・英語は VENT と同じ大文字）
@@ -277,7 +284,7 @@ const TUNE = {
     vent: {name:'放圧', kind:'逃がす', need:1},   // p4＝問4 a＝逃げ＝このターン全員が敵の攻撃を受けない・圧を0へ・回復なし（回復は回復役へ）。P1＝過熱は焚き役へ移した
   },
   // p4＝Phase 2′（要件定義 §11）＝4名固定〈主人公＋3役〉・コマンド化〈既定は溜める・変えたい人形だけタップ・主人公の手でターンが進む〉・圧は共有1本・敵の標的はランダム＋1行の偏り
-  roles:[ {id:'tank', name:'缶番', en:'BOILERMAN', kana:'かまばん'}, {id:'medic', name:'油差し', en:'OILER', kana:'あぶらさし'}, {id:'stoker', name:'火夫', en:'STOKER', kana:'かふ'} ],   // p4-0.2.0＝役の正式名称（旧＝盾役・回復役・焚き役）
+  roles:[ {id:'tank', name:'罐番', en:'BOILERMAN', kana:'かまばん'}, {id:'medic', name:'注油手', en:'OILER', kana:'ちゅうゆしゅ'}, {id:'stoker', name:'投炭手', en:'STOKER', kana:'とうたんしゅ'} ],   // p5-0.1.0＝和名を締めた（マスター決定 2026-09-21・案1 史実の職名＝旧 罐番／注油手／投炭手。p4-0.2.0＝役の正式名称・英語は据え置き）
   autos:[   // 役割枠に入る設計図（問2 b＝当面は各枠1種）。base＝溜める／tech＝技（圧を使う）。数値は仮置き（07 §1-1）
     {id:'shield', role:'tank',   name:'盾型',   hp:70, base:{name:'弱攻撃', dmg:6, pp:+10}, tech:{name:'挑発', pp:-15, desc:'このターンの敵の攻撃を自分が受ける（被害6割）'}},
     {id:'medic',  role:'medic',  name:'整備手', hp:55, base:{name:'弱攻撃', dmg:6, pp:+10}, tech:{name:'整備', pp:-30, heal:20, desc:'全員HP+20'}},
@@ -312,16 +319,20 @@ const TUNE = {
     {id:'plate',    name:'補強板',       short:'被害-3',  desc:'このラン、受ける被害 -3', armor:3},
     {id:'valve',    name:'安全弁',       short:'溢れ+15', desc:'このラン、味方の溢れ値 +15', ovf:15},
     {id:'oil',      name:'応急油',       short:'全快',    desc:'今すぐ全員のHPを全快（壊れた人形は戻らない）', heal:true},
-    {id:'catalyst', name:'過熱の触媒',   short:'過熱+15', desc:'このラン、火夫の過熱で上げる敵の圧 +15', heat:15},
+    {id:'catalyst', name:'過熱の触媒',   short:'過熱+15', desc:'このラン、投炭手の過熱で上げる敵の圧 +15', heat:15},
     {id:'boiler',   name:'予備ボイラー', short:'開幕+20', desc:'このラン、各戦闘の開幕の圧の下限 +20（30→50）', start:20},
   ],
   rest:{ overflowUp:10 },
   event:{ name:'蒸気だまり', text:'配管の裂け目から蒸気が噴いている。', a:{label:'蒸気を汲む', gold:15, hp:-10}, b:{label:'一息つく', heal:15} },
   blueprint:{ start:['shield','medic','stoker'], eliteDrop:0.5, bossDrop:1.0, shopCost:150, scrapMat:1 },   // 設計図の出方（仮決め）。p4＝3役の設計図を最初から所持（未所持が無い間は拾得・工房の出番なし）
   // --- Phase 3（絵）＝表示だけ。戦闘の数値には触らない ---
-  sprite:{ on:true, scale:2.0, eliteScale:1.25, hotAt:70, pickScale:1.5,        // 表示倍率〈1ドット≒2pt・ステージに収まらなければ自動で縮む〉・誰を出す画面は1.5・強敵／ボスは一回り大きく・敵の圧≥70で絵に熱の光
-           sheets:{ A:{file:'A.png',cw:64,ch:64}, B:{file:'B.png',cw:72,ch:80}, C:{file:'C.png',cw:64,ch:64}, A2:{file:'A2.png',cw:64,ch:64} },   // 1巡目＝F1 の4種（A改＝A の色替え）
-           bg:{ 1:'bg_f1.png' } },
+  sprite:{ on:true, scale:2.0, eliteScale:1.25, hotAt:70, pickScale:1.5,        // 表示倍率〈1ドット≒2pt・ステージに収まらなければ自動で縮む〉・強敵／ボスは一回り大きく・敵の圧≥70で絵に熱の光
+           allyScale:1.25, allyGap:6,                                            // p5-0.1.0＝味方4体〈左向き・敵の半分ほどの大きさ〉＝右側に横1列〈敵側から 罐番・機関士・注油手・投炭手〉・幅の半分に収まる範囲で自動で縮む（05 §6-1 仮決め）
+           sheets:{ A:{file:'A.png',cw:64,ch:64}, B:{file:'B.png',cw:72,ch:80}, C:{file:'C.png',cw:64,ch:64}, A2:{file:'A2.png',cw:64,ch:64},   // 1巡目＝F1 の4種（A改＝A の色替え）
+                    D:{file:'D.png',cw:88,ch:64}, E:{file:'E.png',cw:76,ch:80}, F:{file:'F.png',cw:64,ch:64}, D2:{file:'D2.png',cw:88,ch:64}, G:{file:'G.png',cw:76,ch:72},   // 2巡目＝F2 の5種（D改＝D の色替え）。枠は後処理の報告で決めた（2026-09-22）＝横に伸びる砲・蒸気を枠で受ける
+                    // 2巡目＝味方4体。pw＝横1列に並べるときの間隔（立ち姿の幅）＝枠 cw より狭い＝行動コマの道具の伸びは隣に重ねて受ける（絵が出てから決めた・05 §6-2 の 32×48 を置換）
+                    hero:{file:'hero.png',cw:72,ch:60,pw:44}, shield:{file:'shield.png',cw:72,ch:60,pw:44}, medic:{file:'medic.png',cw:72,ch:60,pw:44}, stoker:{file:'stoker.png',cw:72,ch:60,pw:44} },
+           bg:{ 1:'bg_f1.png', 2:'bg_f2.png' } },
   fx:{ attackMs:150, shakeMs:200, whiteMs:80 },                                  // 攻撃コマ・揺れ・白点滅＝判断を待たせない長さ（05 §1-1）
   room:{ make:{mat:3}, weapon:{costs:[50,100,150], dmgPer:3},
          ext:[ {id:'shop', name:'買取所', cost:60, note:'素材を金に換える'}, {id:'workshop', name:'工房', cost:120, note:'未所持の設計図を金で買える', impl:true}, {id:'store', name:'倉庫', cost:80, note:'出撃に持ち込む品を置く'}, {id:'bed', name:'寝台', cost:100, note:'出撃時のバフ'} ] },
@@ -350,8 +361,37 @@ function fitSprite(){   // ステージの高さに収める（上限＝TUNE.spr
   sprStyle($('spr-e'), S.sprId, S.sprFrame||0, sprScale);
 }
 function enemyPose(frame){ if (!S || !S.sprId) return; S.sprFrame = frame; sprStyle($('spr-e'), S.sprId, frame, sprScale); }
+// ===== p5＝味方のスプライト（右側・横1列・左向き・敵側から 罐番→機関士→注油手→投炭手）。絵が無い役は従来の図形のまま =====
+const ALLY_ORDER = ['tank','hero','medic','stoker'];
+const allySheetId = r => r==='hero' ? 'hero' : (S && S.party[r] ? S.party[r].type : (RUN && RUN.party[r] ? RUN.party[r].type : null));   // 壊れた役も型が分かれば薄い絵で出す〈枠が空なら何も出さない〉
+const allyWrap = r => $(r==='hero' ? 'spr-hw' : 'spr-a'+ROLES.indexOf(r)+'w');
+const allySpr = r => $(r==='hero' ? 'spr-h' : 'spr-a'+ROLES.indexOf(r));
+let allyScale = 1;
+function fitAllies(){   // 幅の半分〈敵の反対側〉と高さに収める（上限＝TUNE.sprite.allyScale）。絵のある役だけ絵にし、その役の図形は隠す
+  if (!S) return;
+  const st = $('stage'), gap = TUNE.sprite.allyGap;
+  const ids = ALLY_ORDER.map(r => allySheetId(r) && SHEET(allySheetId(r)) ? allySheetId(r) : null);
+  const cw = Math.max(1, ...ids.map(id => id ? TUNE.sprite.sheets[id].cw : 40)), ch = Math.max(1, ...ids.map(id => id ? TUNE.sprite.sheets[id].ch : 40));
+  const pw = Math.max(1, ...ids.map(id => id ? (TUNE.sprite.sheets[id].pw || TUNE.sprite.sheets[id].cw) : 40));   // p5＝並べる間隔は「立ち姿の幅」で決める（枠の幅で決めると、行動コマの道具の分だけ4体が縮む）
+  allyScale = Math.max(0.75, Math.min(TUNE.sprite.allyScale, (st.clientHeight - 12) / ch, (st.clientWidth * 0.5 - 16 - 3*gap) / (4*pw)));
+  const w = Math.round(cw*allyScale), step = Math.round(pw*allyScale) + gap, over = Math.round((cw - pw) * allyScale / 2);   // over＝枠が立ち姿より広い分の片側＝隣へはみ出す幅（道具が伸びる時だけ見える）
+  ALLY_ORDER.forEach((r, i) => {
+    const id = ids[i], wr = allyWrap(r), fig = $(figOf(r));
+    if (!id){ wr.className = 'sprw ally'; fig.style.display = ids[1] ? 'none' : ''; return; }   // 機関士に絵があれば空の枠は何も描かない（図形は絵が無い時だけ）
+    sprStyle(allySpr(r), id, 0, allyScale);
+    wr.style.right = (8 + (3 - i) * step - over) + 'px'; wr.style.bottom = '6px';   // 立ち姿の足元が等間隔に並ぶ（枠の余りは左右へはみ出させる）
+    const dead = r!=='hero' && (!S.party[r] || S.party[r].hp<=0);
+    wr.className = 'sprw ally on' + (dead ? ' dead' : ''); fig.style.display = 'none';
+  });
+}
+function allyPose(r, frame){ const id = allySheetId(r); if (!id || !SHEET(id)) return; sprStyle(allySpr(r), id, frame, allyScale); }
+function allyAct(r){   // 行動のコマ〈1〉を attackMs だけ見せて構え〈0〉へ戻す＋前へ一歩
+  const id = allySheetId(r); if (!id || !SHEET(id)) return;
+  const wr = allyWrap(r); wr.classList.remove('act'); void wr.offsetWidth; wr.classList.add('act');
+  allyPose(r, 1); setTimeout(()=>allyPose(r, 0), TUNE.fx.attackMs);
+}
 function enemyAttackFx(){ if (!S || !S.sprId) return; enemyPose(1); setTimeout(()=>enemyPose(0), TUNE.fx.attackMs); }
-window.addEventListener('resize', fitSprite);
+window.addEventListener('resize', ()=>{ fitSprite(); fitAllies(); });
 // ===== 状態 =====
 let META, RUN, REC, S;
 const $ = id => document.getElementById(id);
@@ -625,7 +665,8 @@ function startBattle(n){
   $('f-hero').className='fig hero';
   ROLES.forEach((r,i)=>{ const f=$('f-a'+i); f.className = 'fig auto a'+i + (S.party[r] ? '' : ' dead'); f.textContent = S.party[r] ? DEF(S.party[r].type).name.slice(0,1) : ROLE(r).name.slice(0,1); });
   setLog(`<b>${t.name}${S.boss?'（ボス）':''}</b> が現れた。敵の圧は <b>${n.pp0}</b> から。`);
-  show('s-battle'); scrEnter('battle'); fitSprite(); render(); armCmds();
+  ALLY_ORDER.forEach(r=>{ $(figOf(r)).style.display=''; allyWrap(r).className='sprw ally'; });   // p5＝前の戦闘の絵を消してから当て直す
+  show('s-battle'); scrEnter('battle'); fitSprite(); fitAllies(); render(); armCmds();
 }
 function bar(id, v, max){ $(id).style.width = Math.max(0, Math.min(100, v/max*100)) + '%'; }
 function enemyNext(){
@@ -636,7 +677,7 @@ function enemyNext(){
   const who = d.target==='hero' ? '機関士を狙う' : d.target==='weak' ? '弱った者を狙う' : '誰かを狙う';
   return `次: <b>攻撃 ${d.atk}</b>（圧+${d.ppGain}・${who}）` + (d.steam ? `＋<b>蒸気＝味方の圧+${d.steam}</b>` : '') + (d.drain ? `＋<b>吸気＝味方の圧-${d.drain}</b>` : '') + (d.counter ? `　※攻撃には<b>反撃${d.counter}</b>` : '');
 }
-function togglePlan(r){ if (!S || S.over || !S.party[r]) return; S.plan[r] = !S.plan[r]; render(); armCmds(); }   // p4-0.2.0＝計画が変わればボタンの先読みも更新
+function togglePlan(r){ if (!S || S.over || !S.party[r]) return; S.plan[r] = !S.plan[r]; render(); armCmds(true); }   // p4-0.2.0＝計画が変わればボタンの先読みも更新。p5-0.1.0＝考える時間の起点は引き直さない（計器の穴＝07 §5-5-1 ※）
 function render(){
   const e=S.e, d=e.def;
   $('e-name').textContent = d.name + (S.boss?'（ボス）':''); $('e-trait').textContent = '（'+d.trait+'）';
@@ -658,18 +699,19 @@ function render(){
   $('party').innerHTML = h;
   document.querySelectorAll('#party [data-role]').forEach(el=>el.addEventListener('click', ()=>togglePlan(el.dataset.role)));
   const dz = project('atk').over; $('p-pp-t').textContent = `${S.pp}/${OVF()}${dz?' ⚠️攻撃で溢れる':''}`; bar('p-pp', S.pp, OVF()); $('p-pp-bar').classList.toggle('hot', dz);   // p4-0.2.0＝⚠️は「今の計画で攻撃を押すと溢れる」に合わせた（旧＝溢れ−30＝1人分の供給の頃の線）
-  ROLES.forEach((r,i)=>{ $('f-a'+i).classList.toggle('dead', !S.party[r] || S.party[r].hp<=0); });
+  ROLES.forEach((r,i)=>{ const dead = !S.party[r] || S.party[r].hp<=0; $('f-a'+i).classList.toggle('dead', dead); allyWrap(r).classList.toggle('dead', dead); });
 }
 function setLog(html){ $('log').innerHTML = html; }
 function hit(fid){
   const f=$(fid); f.classList.remove('hit'); void f.offsetWidth; f.classList.add('hit');
   if (fid==='f-enemy' && S && S.sprId){ const w=$('spr-w'); w.classList.remove('hit'); void w.offsetWidth; w.classList.add('hit'); w.classList.add('white'); setTimeout(()=>w.classList.remove('white'), TUNE.fx.whiteMs); }
+  if (fid!=='f-enemy' && S){ const r = fid==='f-hero' ? 'hero' : ROLES[+fid.slice(3)]; const w = r && allyWrap(r); if (w && w.classList.contains('on')){ w.classList.remove('hit'); void w.offsetWidth; w.classList.add('hit'); w.classList.add('white'); setTimeout(()=>w.classList.remove('white'), TUNE.fx.whiteMs); } }   // p5＝味方の絵も揺れ＋白点滅
 }
 const figOf = r => r==='hero' ? 'f-hero' : 'f-a'+ROLES.indexOf(r);
 function flash(){ const x=document.createElement('div'); x.className='flash'; $('stage').appendChild(x); setTimeout(()=>x.remove(),600); }
 let armedAt = 0;
 function hasCmd(k){ const c=TUNE.cmd[k]; if (!c) return false; return !c.weapon || RUN.weapon >= c.weapon; }
-// p4-0.2.0＝先読み＝この手を押したとき、今の計画〈技／溜める〉で解決した後の圧と、圧が足りず落ちる技（順序＝機関士→缶番→油差し→火夫・溢れの判定はターン末）
+// p4-0.2.0＝先読み＝この手を押したとき、今の計画〈技／溜める〉で解決した後の圧と、圧が足りず落ちる技（順序＝機関士→罐番→注油手→投炭手・溢れの判定はターン末）
 function project(k){
   const c = TUNE.cmd[k]; let pp = k==='vent' ? 0 : S.pp + c.pp; const fell = [];
   for (const r of ROLES){ const m = S.party[r]; if (!m || m.hp<=0) continue; const a = DEF(m.type);
@@ -677,7 +719,7 @@ function project(k){
   return { pp, fell, over: pp >= OVF() };
 }
 const projText = k => { const p = project(k); return (p.over ? `→<span class="warn">溢れ！</span>` : `→圧${p.pp}`) + (p.fell.length ? `<span class="warn">（${p.fell.join('・')}の技は落ちる）</span>` : ''); };
-function armCmds(){
+function armCmds(keep){   // keep＝先読みの更新だけ（考える時間の起点 armedAt はターン頭の1回だけ＝p5-0.1.0）
   const c = TUNE.cmd, g = $('cmds'); g.innerHTML='';
   const items = [
     ['atk',  `攻撃 ${c.atk.dmg + WPN()}`, `圧+${c.atk.pp}${projText('atk')}`],
@@ -692,7 +734,7 @@ function armCmds(){
     b.onclick = () => act(k);
     g.appendChild(b);
   }
-  armedAt = performance.now();
+  if (!keep) armedAt = performance.now();
 }
 function partyDmgTo(enemy, raw){ return Math.max(1, raw - enemy.def.armor); }
 function dmgToHero(raw){ const v=Math.max(1, raw - BON().armor); S.hero -= v; S.taken += v; REC.bt.taken += v; return v; }
@@ -714,6 +756,7 @@ function act(k){
   REC.turns.push(rec); bt.turns++;
   let msg = '';
   S.taunt = false; S.vent = false;
+  allyAct('hero');   // p5＝機関士の行動のコマ
   // 主人公
   if (k==='atk'){ const v=partyDmgTo(e,c.dmg+WPN()); e.hp-=v; bt.hit+=v; S.pp+=c.pp; msg+=`攻撃 <b>${v}</b>。`; hit('f-enemy'); msg += counterOn('hero'); }
   else if (k==='grd'){ S.guard=true; S.pp+=c.pp; msg+=`防御の構え。`; }
@@ -724,6 +767,7 @@ function act(k){
     const m = S.party[r]; if (!m || m.hp<=0) continue;
     if (S.skipNow || e.hp<=0 || S.hero<=0) break;
     const a = DEF(m.type), planned = S.plan[r], sk = REC.skills[r];
+    allyAct(r);   // p5＝役の行動のコマ〈溜める／技とも〉
     if (planned && S.pp >= -a.tech.pp){
       S.pp += a.tech.pp; sk.fired++; rec.plan += a.tech.name.slice(0,1);
       if (r==='tank'){ S.taunt = true; msg += ` ${ROLE(r).name}の挑発＝このターンは自分が受ける。`; }
@@ -886,7 +930,7 @@ function showResult(){
 }
 function buildOut(){
   const s = summarize(), tk = REC.take, L = [];
-  L.push(`[OVERPRESSURE Phase 2′] ${VER} ${new Date().toLocaleString('ja-JP')}`);
+  L.push(`[OVERPRESSURE Phase 3-2] ${VER} ${new Date().toLocaleString('ja-JP')}`);
   L.push(`[環境] ${window.navigator.standalone?'ホーム画面':'ブラウザ'} / 窓 ${innerWidth}x${innerHeight} / dpr ${devicePixelRatio} / ${location.protocol} / 画像 ${imgStatus()} 倍率${sprScale.toFixed(2)}`);
   L.push(`[ラン] ${tk.result} / 所要 ${Math.round(s.total/1000)}秒（マップ${Math.round(REC.t.map/1000)} 戦闘${Math.round(REC.t.battle/1000)} 他${Math.round(REC.t.other/1000)}）/ フロア ${tk.floor}/${TUNE.floors} / ノード ${tk.nodes}/${RUN.map.length*TUNE.floors} / 戦闘 ${REC.battles.length} / 再開 ${tk.resumed}回 / 種 ${RUN.seed}`);
   if (REC.floors.length) L.push(`[フロア] ` + REC.floors.map(f=>`F${f.floor}:${f.sec}秒まで(戦闘${f.battles})`).join(' '));
