@@ -153,8 +153,8 @@
       <h2>ルール</h2>
       <p>マップの<b>光っているノード</b>を選んで進む。先は全部見える（敵の種類・<b>敵の開幕の圧</b>・宝の中身）。<b>同じ層に並ぶ戦闘は敵の種類が違う</b>。9個目がボス。<b>ボスを倒すと次のフロア（新しい地図・別の敵）へ。2フロアで1ラン。</b></p>
       <p><b>敵は種類ごとに圧の性質が違う</b>（画面の1行と「次:」を見て攻め方を変える）。<b>宝はそのランだけ効く物</b>（持ち帰れない）。</p>
-      <p><b>4名固定</b>＝<b>機関士</b>（きかんし・主人公＝火力）・<b>罐番</b>（かまばん＝盾）・<b>注油手</b>（ちゅうゆしゅ＝回復）・<b>投炭手</b>（とうたんしゅ＝焚き）。<b>圧は4人で1本</b>＝全員の攻撃で溜まり、技で減る。溢れると全員が暴発する。</p>
-      <p><b>戦闘では人形の行をタップすると「技」に切り替わる</b>（もう一度で「溜める」に戻る）。<b>機関士の手を押すとターンが進む</b>＝機関士→罐番→注油手→投炭手の順に動き、圧が足りない技は溜めるに落ちる。<b>溢れの判定はターンの終わりに1回</b>（途中で一時的に溢れても、技で下げれば暴発しない）。<b>機関士のボタンには「その手の後の圧」が出る</b>（計画した技を織り込み・溢れるなら「溢れ」）。罐番の<b>挑発</b>＝そのターンの敵の攻撃を自分が受ける／注油手の<b>整備</b>＝全員HP回復／投炭手の<b>過熱</b>＝敵の圧を上げる。機関士の<b>放圧 VENT</b>＝そのターンは全員が敵の攻撃を受けない（圧は0へ）。</p>
+      <p><b>4名固定</b>＝<b>機関士</b>（きかんし・主人公＝火力）・<b>窯番</b>（かまばん＝盾）・<b>注油手</b>（ちゅうゆしゅ＝回復）・<b>投炭手</b>（とうたんしゅ＝焚き）。<b>圧は4人で1本</b>＝全員の攻撃で溜まり、技で減る。溢れると全員が暴発する。</p>
+      <p><b>戦闘では人形の行をタップすると「技」に切り替わる</b>（もう一度で「溜める」に戻る）。<b>機関士の手を押すとターンが進む</b>＝機関士→窯番→注油手→投炭手の順に動き、圧が足りない技は溜めるに落ちる。<b>溢れの判定はターンの終わりに1回</b>（途中で一時的に溢れても、技で下げれば暴発しない）。<b>機関士のボタンには「その手の後の圧」が出る</b>（計画した技を織り込み・溢れるなら「溢れ」）。窯番の<b>挑発</b>＝そのターンの敵の攻撃を自分が受ける／注油手の<b>整備</b>＝全員HP回復／投炭手の<b>過熱</b>＝敵の圧を上げる。機関士の<b>放圧 VENT</b>＝そのターンは全員が敵の攻撃を受けない（圧は0へ）。</p>
       <p><b>敵の攻撃は誰に来るか分からない</b>（敵ごとに偏りあり・砲は全員に）。</p>
       <p><b>勝てば</b>金と素材と生き残った人形を持ち帰る。<b>機関士が倒れると</b>そのランの金を失い、素材と拾った設計図だけ持ち帰る。人形は3体とも壊れるが<b>設計図は残る</b>。</p>
       <p>ノードに着くたび自動保存。閉じても「続きから」でマップに戻る（戦闘の途中は保存しない）。</p>
@@ -270,7 +270,7 @@
 </div>
 <script>
 'use strict';
-const VER = 'p5-0.1.0';
+const VER = 'p5-0.2.0';
 // ===== 調整値（すべて仮置き＝実機の感触で動かす）=====
 const TUNE = {
   hero:{hp:100, name:'機関士', en:'ENGINEER', kana:'きかんし'}, overflow:100,   // p4-0.2.0＝役の正式名称（マスター決定 2026-09-20＝機関区の持ち場の言葉・英語は VENT と同じ大文字）
@@ -284,7 +284,7 @@ const TUNE = {
     vent: {name:'放圧', kind:'逃がす', need:1},   // p4＝問4 a＝逃げ＝このターン全員が敵の攻撃を受けない・圧を0へ・回復なし（回復は回復役へ）。P1＝過熱は焚き役へ移した
   },
   // p4＝Phase 2′（要件定義 §11）＝4名固定〈主人公＋3役〉・コマンド化〈既定は溜める・変えたい人形だけタップ・主人公の手でターンが進む〉・圧は共有1本・敵の標的はランダム＋1行の偏り
-  roles:[ {id:'tank', name:'罐番', en:'BOILERMAN', kana:'かまばん'}, {id:'medic', name:'注油手', en:'OILER', kana:'ちゅうゆしゅ'}, {id:'stoker', name:'投炭手', en:'STOKER', kana:'とうたんしゅ'} ],   // p5-0.1.0＝和名を締めた（マスター決定 2026-09-21・案1 史実の職名＝旧 罐番／注油手／投炭手。p4-0.2.0＝役の正式名称・英語は据え置き）
+  roles:[ {id:'tank', name:'窯番', en:'BOILERMAN', kana:'かまばん'}, {id:'medic', name:'注油手', en:'OILER', kana:'ちゅうゆしゅ'}, {id:'stoker', name:'投炭手', en:'STOKER', kana:'とうたんしゅ'} ],   // p5-0.2.0＝罐番→窯番（マスター決定 2026-09-22＝「罐」は一見で読めない。かまばんの読みは据え置き）。p5-0.1.0＝和名を締めた（2026-09-21・案1 史実の職名＝旧 缶番／油差し／火夫）。英語は p4-0.2.0 から据え置き
   autos:[   // 役割枠に入る設計図（問2 b＝当面は各枠1種）。base＝溜める／tech＝技（圧を使う）。数値は仮置き（07 §1-1）
     {id:'shield', role:'tank',   name:'盾型',   hp:70, base:{name:'弱攻撃', dmg:6, pp:+10}, tech:{name:'挑発', pp:-15, desc:'このターンの敵の攻撃を自分が受ける（被害6割）'}},
     {id:'medic',  role:'medic',  name:'整備手', hp:55, base:{name:'弱攻撃', dmg:6, pp:+10}, tech:{name:'整備', pp:-30, heal:20, desc:'全員HP+20'}},
@@ -327,11 +327,14 @@ const TUNE = {
   blueprint:{ start:['shield','medic','stoker'], eliteDrop:0.5, bossDrop:1.0, shopCost:150, scrapMat:1 },   // 設計図の出方（仮決め）。p4＝3役の設計図を最初から所持（未所持が無い間は拾得・工房の出番なし）
   // --- Phase 3（絵）＝表示だけ。戦闘の数値には触らない ---
   sprite:{ on:true, scale:2.0, eliteScale:1.25, hotAt:70, pickScale:1.5,        // 表示倍率〈1ドット≒2pt・ステージに収まらなければ自動で縮む〉・強敵／ボスは一回り大きく・敵の圧≥70で絵に熱の光
-           allyScale:1.25, allyGap:6,                                            // p5-0.1.0＝味方4体〈左向き・敵の半分ほどの大きさ〉＝右側に横1列〈敵側から 罐番・機関士・注油手・投炭手〉・幅の半分に収まる範囲で自動で縮む（05 §6-1 仮決め）
-           sheets:{ A:{file:'A.png',cw:64,ch:64}, B:{file:'B.png',cw:72,ch:80}, C:{file:'C.png',cw:64,ch:64}, A2:{file:'A2.png',cw:64,ch:64},   // 1巡目＝F1 の4種（A改＝A の色替え）
-                    D:{file:'D.png',cw:88,ch:64}, E:{file:'E.png',cw:76,ch:80}, F:{file:'F.png',cw:64,ch:64}, D2:{file:'D2.png',cw:88,ch:64}, G:{file:'G.png',cw:76,ch:72},   // 2巡目＝F2 の5種（D改＝D の色替え）。枠は後処理の報告で決めた（2026-09-22）＝横に伸びる砲・蒸気を枠で受ける
-                    // 2巡目＝味方4体。pw＝横1列に並べるときの間隔（立ち姿の幅）＝枠 cw より狭い＝行動コマの道具の伸びは隣に重ねて受ける（絵が出てから決めた・05 §6-2 の 32×48 を置換）
-                    hero:{file:'hero.png',cw:72,ch:60,pw:44}, shield:{file:'shield.png',cw:72,ch:60,pw:44}, medic:{file:'medic.png',cw:72,ch:60,pw:44}, stoker:{file:'stoker.png',cw:72,ch:60,pw:44} },
+           fill:{fight:0.78, elite:0.88, boss:1.0},                             // p5-0.2.0＝敵の体がステージの高さのうち占める割合（通常<強敵<ボス）。実機のステージは92〜99px＝ブラウザの半分しかなく、枠の高さで倍率を決めると全員が天井に当たって「通常の敵>ボス」の逆転が起きた（05 §6-6-3）
+           allyScale:1.5, allyGap:3, allyPitch:40, allyShare:0.55,                // p5-0.2.0＝味方は幅で止まっている＝上限を上げても効かない。効くのは「並べ方」＝間隔〈立ち姿44→38ドット〉・隙間〈6→3〉・幅の取り分〈0.5→0.55〉（05 §6-6-3 案B）
+           // cw／ch＝切り出した枠（道具・蒸気の伸びを受ける余白を含む）。bw／bh＝立ち姿そのものの幅・高さ（後処理 --report の構えのコマ）。
+           // 🔑 p5-0.2.0＝倍率は「枠」でなく「体」で決める＝余白の大きい敵ほど小さく映る問題を断つ（判断軸㉒の敵版・05 §6-6-3 案C）
+           sheets:{ A:{file:'A.png',cw:64,ch:64,bw:48,bh:56}, B:{file:'B.png',cw:72,ch:80,bw:56,bh:35}, C:{file:'C.png',cw:64,ch:64,bw:56,bh:55}, A2:{file:'A2.png',cw:64,ch:64,bw:48,bh:56},   // 1巡目＝F1 の4種（A改＝A の色替え）
+                    D:{file:'D.png',cw:88,ch:64,bw:56,bh:39}, E:{file:'E.png',cw:76,ch:80,bw:64,bh:56}, F:{file:'F.png',cw:64,ch:64,bw:52,bh:56}, D2:{file:'D2.png',cw:88,ch:64,bw:56,bh:39}, G:{file:'G.png',cw:76,ch:72,bw:50,bh:56},   // 2巡目＝F2 の5種（D改＝D の色替え）
+                    // 味方4体。allyPitch（並べる間隔）は TUNE.sprite 側の1つの値＝立ち姿の幅より少し狭く取り、行動コマの道具の伸びは隣に重ねて受ける
+                    hero:{file:'hero.png',cw:72,ch:60,bw:21,bh:44}, shield:{file:'shield.png',cw:72,ch:60,bw:43,bh:44}, medic:{file:'medic.png',cw:72,ch:60,bw:23,bh:44}, stoker:{file:'stoker.png',cw:72,ch:60,bw:39,bh:44} },
            bg:{ 1:'bg_f1.png', 2:'bg_f2.png' } },
   fx:{ attackMs:150, shakeMs:200, whiteMs:80 },                                  // 攻撃コマ・揺れ・白点滅＝判断を待たせない長さ（05 §1-1）
   room:{ make:{mat:3}, weapon:{costs:[50,100,150], dmgPer:3},
@@ -353,15 +356,18 @@ function sprStyle(el, id, frame, scale){   // 1コマを background-size で拡�
   el.style.backgroundImage = `url(img/${sh.file}?v=${VER})`; el.style.backgroundSize = `${w*2}px ${h}px`; el.style.backgroundPosition = `${-frame*w}px 0`;
 }
 let sprScale = 1;
-function fitSprite(){   // ステージの高さに収める（上限＝TUNE.sprite.scale）
+function fitSprite(){   // p5-0.2.0＝「体」の大きさで決める＝ステージの高さのうち fill の割合を体が占める（枠の余白＝蒸気の逃げ場は倍率に入れない）
   if (!S || !S.sprId) return;
   const sh = TUNE.sprite.sheets[S.sprId], st = $('stage');
   const cap = TUNE.sprite.scale * (S.boss || S.elite ? TUNE.sprite.eliteScale : 1);
-  sprScale = Math.max(0.75, Math.min(cap, (st.clientHeight - 12) / sh.ch, (st.clientWidth * 0.5) / sh.cw));
+  const fill = S.boss ? TUNE.sprite.fill.boss : S.elite ? TUNE.sprite.fill.elite : TUNE.sprite.fill.fight;
+  const bh = sh.bh || sh.ch, bw = sh.bw || sh.cw;
+  sprScale = Math.max(0.75, Math.min(cap, (st.clientHeight - 12) * fill / bh, (st.clientWidth * 0.5) / bw));
   sprStyle($('spr-e'), S.sprId, S.sprFrame||0, sprScale);
+  $('spr-w').style.left = Math.round(8 - (sh.cw - bw) * sprScale / 2) + 'px';   // 枠の余白の分だけ左へ寄せる＝体の左端が同じ位置に立つ
 }
 function enemyPose(frame){ if (!S || !S.sprId) return; S.sprFrame = frame; sprStyle($('spr-e'), S.sprId, frame, sprScale); }
-// ===== p5＝味方のスプライト（右側・横1列・左向き・敵側から 罐番→機関士→注油手→投炭手）。絵が無い役は従来の図形のまま =====
+// ===== p5＝味方のスプライト（右側・横1列・左向き・敵側から 窯番→機関士→注油手→投炭手）。絵が無い役は従来の図形のまま =====
 const ALLY_ORDER = ['tank','hero','medic','stoker'];
 const allySheetId = r => r==='hero' ? 'hero' : (S && S.party[r] ? S.party[r].type : (RUN && RUN.party[r] ? RUN.party[r].type : null));   // 壊れた役も型が分かれば薄い絵で出す〈枠が空なら何も出さない〉
 const allyWrap = r => $(r==='hero' ? 'spr-hw' : 'spr-a'+ROLES.indexOf(r)+'w');
@@ -371,10 +377,11 @@ function fitAllies(){   // 幅の半分〈敵の反対側〉と高さに収め�
   if (!S) return;
   const st = $('stage'), gap = TUNE.sprite.allyGap;
   const ids = ALLY_ORDER.map(r => allySheetId(r) && SHEET(allySheetId(r)) ? allySheetId(r) : null);
-  const cw = Math.max(1, ...ids.map(id => id ? TUNE.sprite.sheets[id].cw : 40)), ch = Math.max(1, ...ids.map(id => id ? TUNE.sprite.sheets[id].ch : 40));
-  const pw = Math.max(1, ...ids.map(id => id ? (TUNE.sprite.sheets[id].pw || TUNE.sprite.sheets[id].cw) : 40));   // p5＝並べる間隔は「立ち姿の幅」で決める（枠の幅で決めると、行動コマの道具の分だけ4体が縮む）
-  allyScale = Math.max(0.75, Math.min(TUNE.sprite.allyScale, (st.clientHeight - 12) / ch, (st.clientWidth * 0.5 - 16 - 3*gap) / (4*pw)));
-  const w = Math.round(cw*allyScale), step = Math.round(pw*allyScale) + gap, over = Math.round((cw - pw) * allyScale / 2);   // over＝枠が立ち姿より広い分の片側＝隣へはみ出す幅（道具が伸びる時だけ見える）
+  const cw = Math.max(1, ...ids.map(id => id ? TUNE.sprite.sheets[id].cw : 40));
+  const bh = Math.max(1, ...ids.map(id => id ? (TUNE.sprite.sheets[id].bh || TUNE.sprite.sheets[id].ch) : 40));
+  const pw = TUNE.sprite.allyPitch;   // p5-0.2.0＝並べる間隔は1つの値（立ち姿の幅より少し狭い＝道具の伸びは隣に重ねて受ける）
+  allyScale = Math.max(0.75, Math.min(TUNE.sprite.allyScale, (st.clientHeight - 12) / bh, (st.clientWidth * TUNE.sprite.allyShare - 16 - 3*gap) / (4*pw)));
+  const w = Math.round(cw*allyScale), step = Math.round(pw*allyScale) + gap, over = Math.round((cw - pw) * allyScale / 2);   // over＝枠が間隔より広い分の片側＝隣へはみ出す幅（道具が伸びる時だけ見える）
   ALLY_ORDER.forEach((r, i) => {
     const id = ids[i], wr = allyWrap(r), fig = $(figOf(r));
     if (!id){ wr.className = 'sprw ally'; fig.style.display = ids[1] ? 'none' : ''; return; }   // 機関士に絵があれば空の枠は何も描かない（図形は絵が無い時だけ）
@@ -405,6 +412,8 @@ const ROLES = TUNE.roles.map(r=>r.id);
 const ROLE = id => TUNE.roles.find(r=>r.id===id);
 const aliveParty = () => (RUN && RUN.party) ? ROLES.filter(r => RUN.party[r] && RUN.party[r].hp>0) : [];
 const healParty = h => { if (!RUN || !RUN.party) return; ROLES.forEach(r=>{ const m=RUN.party[r]; if (m && m.hp>0) m.hp = Math.min(DEF(m.type).hp, h==null ? DEF(m.type).hp : m.hp + h); }); };   // h=null＝全快
+// p5-0.2.0＝遠征中の画面（地図・出来事・休憩・フロア）は役の名で出す＝型の名〈盾型・整備手・焚き手〉は部屋の設計図と結果の記録に残す（マスター決定 2026-09-22）
+const partyTextRole = party => { const xs = ROLES.map(r => { const m = party && party[r]; if (!m) return null; const id = typeof m==='string' ? m : m.type; return `${ROLE(r).name}${m.hp>0?` ${m.hp}/${DEF(id).hp}`:'（壊れた）'}`; }).filter(Boolean); return xs.length ? xs.join('・') : 'なし'; };
 const partyText = (party, withHp) => { const xs = ROLES.map(r => { const m = party && party[r]; if (!m) return null; const id = typeof m==='string' ? m : m.type; return withHp ? `${DEF(id).name}${m.hp>0?` ${m.hp}/${DEF(id).hp}`:'（壊れた）'}` : DEF(id).name; }).filter(Boolean); return xs.length ? xs.join('・') : 'なし'; };
 const ENEMY = id => TUNE.enemies.find(e=>e.id===id);
 const ITEM = id => TUNE.treasure.find(t=>t.id===id);
@@ -559,7 +568,7 @@ function reachable(){
 }
 function showMap(){
   show('s-map'); scrEnter('map');
-  $('mp-h').textContent = `${RUN.hero}/${TUNE.hero.hp}`; $('mp-a').textContent = partyText(RUN.party, true);
+  $('mp-h').textContent = `${RUN.hero}/${TUNE.hero.hp}`; $('mp-a').textContent = partyTextRole(RUN.party);
   $('mp-pp').textContent = `${RUN.pp}/${OVF()}`; $('mp-g').textContent = RUN.gold; $('mp-m').textContent = RUN.mat;
   const bon = RUN.items.length ? `・宝＝${RUN.items.map(id=>ITEM(id).short).join(' ')}` : '';
   $('mp-hint').textContent = `フロア ${RUN.floor}／${TUNE.floors}＝光るノードを選ぶ（上がボス${RUN.floor<TUNE.floors?'＝倒すと次のフロアへ':'＝最後'}）${bon}`;
@@ -623,7 +632,7 @@ function showTreasure(n){
 }
 function showEvent(n){
   const ev=TUNE.event;
-  $('ev-title').textContent = ev.name; $('ev-body').innerHTML = `<p>${ev.text}</p><p class="dim">機関士 ${RUN.hero}/${TUNE.hero.hp}・人形 ${partyText(RUN.party, true)}</p>`;
+  $('ev-title').textContent = ev.name; $('ev-body').innerHTML = `<p>${ev.text}</p><p class="dim">機関士 ${RUN.hero}/${TUNE.hero.hp}・人形 ${partyTextRole(RUN.party)}</p>`;
   $('b-ev-a').innerHTML = `<b>${ev.a.label}</b><small>金+${ev.a.gold}・機関士HP${ev.a.hp}</small>`;
   $('b-ev-b').innerHTML = `<b>${ev.b.label}</b><small>全員HP+${ev.b.heal}</small>`;
   show('s-event'); scrEnter('other'); choiceShownAt = performance.now();
@@ -636,7 +645,7 @@ function evPick(which){
   nodeDone();
 }
 function showRest(n){
-  $('rs-body').innerHTML = `<p>機関士 ${RUN.hero}/${TUNE.hero.hp}・人形 ${partyText(RUN.party, true)}${aliveParty().length===0 && ROLES.some(r=>RUN.party[r])?'（壊れている＝修理できない・設計図は残る）':''}</p><p>味方の溢れ値 ${OVF()}・圧 ${RUN.pp}</p>`;
+  $('rs-body').innerHTML = `<p>機関士 ${RUN.hero}/${TUNE.hero.hp}・人形 ${partyTextRole(RUN.party)}${aliveParty().length===0 && ROLES.some(r=>RUN.party[r])?'（壊れている＝修理できない・設計図は残る）':''}</p><p>味方の溢れ値 ${OVF()}・圧 ${RUN.pp}</p>`;
   $('b-rs-a').innerHTML = `<b>整備</b><small>全員のHPを全快（壊れた人形は戻らない）</small>`;
   $('b-rs-b').innerHTML = `<b>増圧</b><small>このランの溢れ値 +${TUNE.rest.overflowUp}（${OVF()}→${OVF()+TUNE.rest.overflowUp}）</small>`;
   show('s-rest'); scrEnter('other'); choiceShownAt = performance.now();
@@ -694,7 +703,7 @@ function render(){
     if (!m){ h += `<div class="prow dead"><div class="pn">${ROLE(r).name}<b>なし</b></div><div class="pb"><small>壊れている（設計図は残る）</small></div><div class="pa"></div></div>`; return; }
     const a = DEF(m.type), on = S.plan[r];
     const act = on ? `<b>技：${a.tech.name}</b>圧${a.tech.pp}` : `<b>溜める：${a.base.name}</b>圧+${a.base.pp}`;   // p4-0.2.0＝「足りない」は機関士のボタン側で先読み（行の判定は手を押す前の圧だったため外した）
-    h += `<div class="prow${on?' tech':''}${m.hp<=0?' dead':''}" data-role="${r}"><div class="pn">${ROLE(r).en}<b>${ROLE(r).name}</b></div><div class="pb"><div class="bar"><i style="width:${Math.max(0,m.hp/a.hp*100)}%"></i></div><small>${a.name} ${m.hp}/${a.hp}</small></div><div class="pa">${act}</div></div>`;
+    h += `<div class="prow${on?' tech':''}${m.hp<=0?' dead':''}" data-role="${r}"><div class="pn">${ROLE(r).en}<b>${ROLE(r).name}</b></div><div class="pb"><div class="bar"><i style="width:${Math.max(0,m.hp/a.hp*100)}%"></i></div><small>${m.hp}/${a.hp}</small></div><div class="pa">${act}</div></div>`;
   });
   $('party').innerHTML = h;
   document.querySelectorAll('#party [data-role]').forEach(el=>el.addEventListener('click', ()=>togglePlan(el.dataset.role)));
@@ -711,7 +720,7 @@ const figOf = r => r==='hero' ? 'f-hero' : 'f-a'+ROLES.indexOf(r);
 function flash(){ const x=document.createElement('div'); x.className='flash'; $('stage').appendChild(x); setTimeout(()=>x.remove(),600); }
 let armedAt = 0;
 function hasCmd(k){ const c=TUNE.cmd[k]; if (!c) return false; return !c.weapon || RUN.weapon >= c.weapon; }
-// p4-0.2.0＝先読み＝この手を押したとき、今の計画〈技／溜める〉で解決した後の圧と、圧が足りず落ちる技（順序＝機関士→罐番→注油手→投炭手・溢れの判定はターン末）
+// p4-0.2.0＝先読み＝この手を押したとき、今の計画〈技／溜める〉で解決した後の圧と、圧が足りず落ちる技（順序＝機関士→窯番→注油手→投炭手・溢れの判定はターン末）
 function project(k){
   const c = TUNE.cmd[k]; let pp = k==='vent' ? 0 : S.pp + c.pp; const fell = [];
   for (const r of ROLES){ const m = S.party[r]; if (!m || m.hp<=0) continue; const a = DEF(m.type);
@@ -867,7 +876,7 @@ function afterBattle(win){
     const h = TUNE.restHealBattle; RUN.hero = Math.min(TUNE.hero.hp, RUN.hero + h); healParty(h);
     const doneFloor = RUN.floor; RUN.floor++; RUN.map = genMap(floorSeed(RUN.seed, RUN.floor), RUN.floor); RUN.li=-1; RUN.ii=-1; saveRun();
     $('fl-title').textContent = `フロア${doneFloor}のボス ${S.e.def.name} を倒した`;
-    $('fl-body').innerHTML = `<p>金 +${TUNE.bossReward.gold}（このラン ${RUN.gold}）・素材 +${TUNE.bossReward.mat}（このラン ${RUN.mat}）</p>${gotMsg}<p>小休止＝HP+${h}。圧は ${RUN.pp}。</p><p>次＝<b>フロア${RUN.floor}／${TUNE.floors}</b>（新しい地図・<b>別の敵</b>・${RUN.floor>=TUNE.floors?'最後のボス':'その先にもう1つ'}）</p><p class="dim">人形＝${partyText(RUN.party, true)}</p>`;
+    $('fl-body').innerHTML = `<p>金 +${TUNE.bossReward.gold}（このラン ${RUN.gold}）・素材 +${TUNE.bossReward.mat}（このラン ${RUN.mat}）</p>${gotMsg}<p>小休止＝HP+${h}。圧は ${RUN.pp}。</p><p>次＝<b>フロア${RUN.floor}／${TUNE.floors}</b>（新しい地図・<b>別の敵</b>・${RUN.floor>=TUNE.floors?'最後のボス':'その先にもう1つ'}）</p><p class="dim">人形＝${partyTextRole(RUN.party)}</p>`;
     show('s-floor'); scrEnter('other'); return;
   }
   const r = TUNE.reward[n.type], h = TUNE.restHealBattle;
