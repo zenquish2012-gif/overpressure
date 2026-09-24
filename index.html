@@ -158,6 +158,7 @@
       <p><b>4名固定</b>＝<b>機関士</b>（きかんし・主人公＝火力）・<b>窯番</b>（かまばん＝盾）・<b>注油手</b>（ちゅうゆしゅ＝回復）・<b>投炭手</b>（とうたんしゅ＝焚き）。<b>圧は4人で1本</b>＝全員の攻撃で溜まり、技で減る。溢れると全員が暴発する。</p>
       <p><b>戦闘では人形の行をタップすると「技」に切り替わる</b>（もう一度で「溜める」に戻る）。<b>機関士の手を押すとターンが進む</b>＝機関士→窯番→注油手→投炭手の順に動き、圧が足りない技は溜めるに落ちる。<b>溢れの判定はターンの終わりに1回</b>（途中で一時的に溢れても、技で下げれば暴発しない）。<b>機関士のボタンには「その手の後の圧」が出る</b>（計画した技を織り込み・溢れるなら「溢れ」）。窯番の<b>挑発</b>＝そのターンの敵の攻撃を自分が受ける／注油手の<b>整備</b>＝全員HP回復／投炭手の<b>過熱</b>＝敵の圧を上げる。機関士の<b>放圧 VENT</b>＝味方の圧を0にし、<b>その半分を敵の罐へ押し付ける</b>（敵が溢れればその場で暴発）。</p>
       <p><b>敵の攻撃は誰に来るか分からない</b>（敵ごとに偏りあり・砲は全員に）。</p>
+      <p><b>傷は次の戦闘に残る</b>＝戦闘のあと、機関士はHP+20回復する。<b>人形は機械なので勝手には直らない</b>（直すのは休憩の「整備」・注油手の「整備」・宝の「応急油」だけ）。壊れた人形は、そのランでは戻らない。</p>
       <p><b>勝てば</b>金と素材と生き残った人形を持ち帰る。<b>機関士が倒れると</b>そのランの金を失い、素材と拾った設計図だけ持ち帰る。人形は3体とも壊れるが<b>設計図は残る</b>。</p>
       <p>ノードに着くたび自動保存。閉じても「続きから」でマップに戻る（戦闘の途中は保存しない）。</p>
       <p class="dim">ランが終わると結果画面が出るので「コピー」してサイファへ。</p>
@@ -261,6 +262,8 @@
       <div class="row"><button data-q="q5" data-v="はい">はい</button><button data-q="q5" data-v="半々">半々</button><button data-q="q5" data-v="いいえ">いいえ</button></div>
       <p><b>Q6 圧を誰に使うかで迷いましたか</b></p>
       <div class="row"><button data-q="q6" data-v="迷った">迷った</button><button data-q="q6" data-v="半々">半々</button><button data-q="q6" data-v="選ぶだけ">選ぶだけ</button></div>
+      <p><b>Q7 人形の傷を気にして、打ち方を変えましたか</b></p>
+      <div class="row"><button data-q="q7" data-v="はい">はい</button><button data-q="q7" data-v="半々">半々</button><button data-q="q7" data-v="いいえ">いいえ</button></div>
     </div>
     <div class="box">
       <button id="b-copy">結果をコピー</button>
@@ -272,13 +275,14 @@
 </div>
 <script>
 'use strict';
-const VER = 'p6-0.1.0';
+const VER = 'p7-0.1.0';
 // ===== 調整値（すべて仮置き＝実機の感触で動かす）=====
 const TUNE = {
   hero:{hp:100, name:'機関士', en:'ENGINEER', kana:'きかんし'}, overflow:100,   // p4-0.2.0＝役の正式名称（マスター決定 2026-09-20＝機関区の持ち場の言葉・英語は VENT と同じ大文字）
   burst:{selfDmg:15, resetTo:30},          // 味方の暴発＝全員に15・圧は30へ・次ターン行動不能
   startPP:30,                              // 各戦闘の開幕の圧の下限（P0 案1）
-  restHealBattle:20,                       // 戦闘後の回復
+  restHealBattle:20,                       // 戦闘後の回復（p7-0.1.0＝機関士だけ）
+  dollsHealAfterBattle:false,              // p7-0.1.0＝難易度の相談 問2 イ（マスター決定 2026-09-24）＝人形は機械なので戦闘後・フロアの小休止では直らない＝直すのは休憩の整備・注油手の整備・宝の応急油だけ（08 §1）。旧＝4名とも+20＝1戦の被害 約17.5 を毎回消していた
   cmd:{
     atk:  {name:'攻撃', kind:'溜める', dmg:12, pp:+20, need:0},
     grd:  {name:'防御', kind:'溜める', pp:+15, need:0},
@@ -424,6 +428,7 @@ const aliveParty = () => (RUN && RUN.party) ? ROLES.filter(r => RUN.party[r] && 
 const healParty = h => { if (!RUN || !RUN.party) return; ROLES.forEach(r=>{ const m=RUN.party[r]; if (m && m.hp>0) m.hp = Math.min(DEF(m.type).hp, h==null ? DEF(m.type).hp : m.hp + h); }); };   // h=null＝全快
 // p5-0.2.0＝遠征中の画面（地図・出来事・休憩・フロア）は役の名で出す＝型の名〈盾型・整備手・焚き手〉は部屋の設計図と結果の記録に残す（マスター決定 2026-09-22）
 const partyTextRole = party => { const xs = ROLES.map(r => { const m = party && party[r]; if (!m) return null; const id = typeof m==='string' ? m : m.type; return `${ROLE(r).name}${m.hp>0?` ${m.hp}/${DEF(id).hp}`:'（壊れた）'}`; }).filter(Boolean); return xs.length ? xs.join('・') : 'なし'; };
+const dollNote = () => `<p>人形＝${partyTextRole(RUN.party)}</p>${TUNE.dollsHealAfterBattle ? '' : '<p class="dim">人形は戦闘のあとでは直らない（直すのは休憩の「整備」・注油手の「整備」・宝の「応急油」だけ）。</p>'}`;   // p7-0.1.0＝戦闘後・フロアの小休止の画面で、残った傷を役の名で見せる
 const partyText = (party, withHp) => { const xs = ROLES.map(r => { const m = party && party[r]; if (!m) return null; const id = typeof m==='string' ? m : m.type; return withHp ? `${DEF(id).name}${m.hp>0?` ${m.hp}/${DEF(id).hp}`:'（壊れた）'}` : DEF(id).name; }).filter(Boolean); return xs.length ? xs.join('・') : 'なし'; };
 const ENEMY = id => TUNE.enemies.find(e=>e.id===id);
 const ITEM = id => TUNE.treasure.find(t=>t.id===id);
@@ -674,7 +679,7 @@ function startBattle(n){
   const party = {}; ROLES.forEach(r=>{ const m = RUN.party[r]; party[r] = (m && m.hp>0) ? { type:m.type, hp:m.hp } : null; });
   S = { hero:RUN.hero, party, pp:RUN.pp, e:{def:t, hp:t.hp, pp:n.pp0, skip:false}, turn:0, skip:false, skipNow:false, guard:false, over:false, boss:n.type==='boss', taken:0, plan:{tank:false, medic:false, stoker:false}, taunt:false, vent:false };
   const sp = TUNE.startPP + BON().start; if (S.pp < sp) S.pp = sp;
-  REC.bt = { id:t.id, pp0:n.pp0, type:n.type, node:`${RUN.floor}-${RUN.li+1}`, floor:RUN.floor, hit:0, burst:0, taken:0, turns:0, heat:[], vents:0, dodged:0, start:performance.now(), win:null };
+  REC.bt = { id:t.id, pp0:n.pp0, type:n.type, node:`${RUN.floor}-${RUN.li+1}`, floor:RUN.floor, hit:0, burst:0, taken:0, turns:0, heat:[], vents:0, dodged:0, start:performance.now(), win:null, hp0:[S.hero].concat(ROLES.map(r=>S.party[r] ? S.party[r].hp : (RUN.party[r] ? 0 : null))) };   // p7-0.1.0＝戦闘開始のHP〈機関士・窯番・注油手・投炭手〉＝傷がどう残ったかを読む（0＝壊れている／null＝枠が空）
   S.elite = n.type==='elite';
   S.sprId = SHEET(t.id) ? t.id : null; S.sprFrame = 0;                            // p3＝絵があれば絵・無ければ図形
   $('f-enemy').textContent = t.id; $('f-enemy').className = 'fig enemy' + ((t.id==='B'||t.id==='C'||t.id==='E')?' b':'') + (S.boss?' boss':'');
@@ -804,22 +809,27 @@ function act(k){
     S.plan[r] = false;
   }
   ROLES.forEach(r=>{ S.plan[r]=false; });
-  msg += checkPartyBurst();   // p4-0.2.0＝溢れの判定はターン末に1回（旧＝機関士・各役の段ごと＝技をタップしていても技が引く前に溢れた 7/13）
+  msg += checkPartyBurst(); trackLow();   // p4-0.2.0＝溢れの判定はターン末に1回（旧＝機関士・各役の段ごと＝技をタップしていても技が引く前に溢れた 7/13）
   rec.burst = REC.burstsP > bp0;
   tally();
   S.skipNow = false;
   if (S.hero<=0){ S.hero=0; render(); setLog(msg); S.over=true; armCmds(); setTimeout(()=>afterBattle(false), 700); return; }
   if (e.hp<=0){ e.hp=0; render(); setLog(msg+` <b>${d.name}を倒した！</b>`); S.over=true; armCmds(); setTimeout(()=>afterBattle(true), 700); return; }
-  msg += enemyAct(); tally();
+  msg += enemyAct(); tally(); trackLow();
   if (S.skip){ S.skip=false; S.skipNow=true; msg += ` <span class="warn">暴発の反動＝次のターンは全員動けない。</span>`; }
   render(); setLog(msg);
   if (S.hero<=0){ S.hero=0; render(); S.over=true; armCmds(); setTimeout(()=>afterBattle(false), 700); return; }
   if (S.skipNow){
     S.over=true; armCmds();
-    setTimeout(()=>{ let m = enemyAct(); S.skipNow=false; S.over=false; render(); setLog(`<span class="warn">動けない…</span> `+m); if (S.hero<=0){S.hero=0;render();S.over=true;armCmds();setTimeout(()=>afterBattle(false),700);} else armCmds(); }, 900);
+    setTimeout(()=>{ let m = enemyAct(); trackLow(); S.skipNow=false; S.over=false; render(); setLog(`<span class="warn">動けない…</span> `+m); if (S.hero<=0){S.hero=0;render();S.over=true;armCmds();setTimeout(()=>afterBattle(false),700);} else armCmds(); }, 900);
     return;
   }
   armCmds();
+}
+function trackLow(){   // p7-0.1.0＝戦闘中の一番低いHP〈機関士・窯番・注油手・投炭手〉＝傷の緊張を読む（整備で戻る前の底も拾う）
+  const b = REC.bt; if (!b) return; if (!b.lo) b.lo = (b.hp0||[]).slice();
+  const now = [S.hero].concat(ROLES.map(r=>S.party[r] ? Math.max(0, S.party[r].hp) : null));
+  now.forEach((v,i)=>{ if (v===null) return; if (b.lo[i]===null || b.lo[i]===undefined || v < b.lo[i]) b.lo[i] = v; });
 }
 function checkEnemyBurst(){
   const e=S.e, d=e.def;
@@ -888,17 +898,17 @@ function afterBattle(win){
     n.done=true; RUN.pending=false; RUN.gold += TUNE.bossReward.gold; RUN.mat += TUNE.bossReward.mat;
     flushScr(); REC.floors.push({ floor:RUN.floor, sec:Math.round((REC.t.map+REC.t.battle+REC.t.other)/1000), battles:REC.battles.length, nodes:RUN.li+1 });
     if (RUN.floor >= TUNE.floors){ endRun(true); return; }
-    const h = TUNE.restHealBattle; RUN.hero = Math.min(TUNE.hero.hp, RUN.hero + h); healParty(h);
+    const h = TUNE.restHealBattle; RUN.hero = Math.min(TUNE.hero.hp, RUN.hero + h); if (TUNE.dollsHealAfterBattle) healParty(h);
     const doneFloor = RUN.floor; RUN.floor++; RUN.map = genMap(floorSeed(RUN.seed, RUN.floor), RUN.floor); RUN.li=-1; RUN.ii=-1; saveRun();
     $('fl-title').textContent = `フロア${doneFloor}のボス ${S.e.def.name} を倒した`;
-    $('fl-body').innerHTML = `<p>金 +${TUNE.bossReward.gold}（このラン ${RUN.gold}）・素材 +${TUNE.bossReward.mat}（このラン ${RUN.mat}）</p>${gotMsg}<p>小休止＝HP+${h}。圧は ${RUN.pp}。</p><p>次＝<b>フロア${RUN.floor}／${TUNE.floors}</b>（新しい地図・<b>別の敵</b>・${RUN.floor>=TUNE.floors?'最後のボス':'その先にもう1つ'}）</p><p class="dim">人形＝${partyTextRole(RUN.party)}</p>`;
+    $('fl-body').innerHTML = `<p>金 +${TUNE.bossReward.gold}（このラン ${RUN.gold}）・素材 +${TUNE.bossReward.mat}（このラン ${RUN.mat}）</p>${gotMsg}<p>小休止＝機関士 HP+${h}。圧は ${RUN.pp}。</p>${dollNote()}<p>次＝<b>フロア${RUN.floor}／${TUNE.floors}</b>（新しい地図・<b>別の敵</b>・${RUN.floor>=TUNE.floors?'最後のボス':'その先にもう1つ'}）</p>`;
     show('s-floor'); scrEnter('other'); return;
   }
   const r = TUNE.reward[n.type], h = TUNE.restHealBattle;
   RUN.gold += r.gold; RUN.mat += r.mat;
-  RUN.hero = Math.min(TUNE.hero.hp, RUN.hero + h); healParty(h);
+  RUN.hero = Math.min(TUNE.hero.hp, RUN.hero + h); if (TUNE.dollsHealAfterBattle) healParty(h);
   $('rw-title').textContent = `${S.e.def.name} を倒した`;
-  $('rw-body').innerHTML = `<p>金 +${r.gold}（このラン ${RUN.gold}）・素材 +${r.mat}（このラン ${RUN.mat}）</p>${gotMsg}<p>小休止＝HP+${h}。圧は ${RUN.pp}。</p><p class="dim">人形＝${partyText(RUN.party, true)}</p>${aliveParty().length===0 && ROLES.some(x=>RUN.party[x]) ? '<p class="warn">人形は壊れている（設計図は残る）。</p>':''}`;
+  $('rw-body').innerHTML = `<p>金 +${r.gold}（このラン ${RUN.gold}）・素材 +${r.mat}（このラン ${RUN.mat}）</p>${gotMsg}<p>小休止＝機関士 HP+${h}。圧は ${RUN.pp}。</p>${dollNote()}${aliveParty().length===0 && ROLES.some(x=>RUN.party[x]) ? '<p class="warn">人形は壊れている（設計図は残る）。</p>':''}`;
   show('s-reward'); scrEnter('other');
 }
 function endRun(win, cause){
@@ -934,6 +944,9 @@ function summarize(){
   return { n, dist, rep, techTurns, think:avg(thinks), thinkMed:med(thinks), picks:picks.length, pickAvg:avg(pms), pickMed:med(pms), kinds, total, secPerTurn, enemies };
 }
 const KIND = {fight:'戦闘', elite:'強敵', boss:'ボス', treasure:'宝', event:'出来事', rest:'休憩'};
+// p7-0.1.0＝直す手〈休憩の整備・注油手の整備・応急油〉の回数と、戦闘開始時の人形の最低HP（08 §1 #1 #2 の読む場所）
+const fixLine = () => { const rs = REC.choices.filter(c=>c.kind==='rest'), fx = rs.filter(c=>c.pick==='整備').length, oil = REC.items.filter(i=>i.id==='oil'||i.short==='全快').length, sk = REC.skills.medic; return `休憩の整備 ${fx}回（増圧 ${rs.length-fx}回）/ 注油手の整備 ${sk.fired}回 回復${sk.healed} / 応急油 ${oil}回 / 戦闘後の回復＝${TUNE.dollsHealAfterBattle?'全員':'機関士だけ'}`; };
+const dollMinLine = () => ROLES.map((r,i)=>{ const tp = REC.take && REC.take.party ? REC.take.party[i] : null; const vs = REC.battles.map(b=>b.lo ? b.lo[i+1] : b.hp0 ? b.hp0[i+1] : null).concat(tp ? [Math.max(0, tp.hp)] : []).filter(v=>v!==null && v!==undefined); const mx = tp ? DEF(tp.type).hp : '-'; return `${ROLE(r).name.slice(0,1)}${vs.length ? Math.min(...vs) : '-'}/${mx}`; }).join(' ');   // 戦闘中の底〈trackLow〉とラン終了時のうち一番低いHP
 const roleLine = () => { const sk=REC.skills, f=o=>o.fell?`(落ち${o.fell})`:''; return `${ROLE('tank').name}:挑発${sk.tank.fired}回${f(sk.tank)} 受けた${sk.tank.absorbed}回 | ${ROLE('medic').name}:整備${sk.medic.fired}回${f(sk.medic)} 回復${sk.medic.healed} | ${ROLE('stoker').name}:過熱${sk.stoker.fired}回${f(sk.stoker)} 仕上げ${sk.stoker.finish}回`; };   // p4-0.2.0＝役の正式名称・落ちた技の回数
 const hitsLine = () => { const h=REC.hits; return `${TUNE.hero.name}${h.hero} ${ROLE('tank').name}${h.tank} ${ROLE('medic').name}${h.medic} ${ROLE('stoker').name}${h.stoker} 砲〈全員〉${h.all}`; };
 function showResult(){
@@ -954,7 +967,7 @@ function showResult(){
 }
 function buildOut(){
   const s = summarize(), tk = REC.take, L = [];
-  L.push(`[OVERPRESSURE 枝② 放圧] ${VER} ${new Date().toLocaleString('ja-JP')}`);
+  L.push(`[OVERPRESSURE 難易度① 傷が残る] ${VER} ${new Date().toLocaleString('ja-JP')}`);
   L.push(`[環境] ${window.navigator.standalone?'ホーム画面':'ブラウザ'} / 窓 ${innerWidth}x${innerHeight} / dpr ${devicePixelRatio} / ${location.protocol} / 画像 ${imgStatus()} 倍率${sprScale.toFixed(2)}`);
   L.push(`[ラン] ${tk.result} / 所要 ${Math.round(s.total/1000)}秒（マップ${Math.round(REC.t.map/1000)} 戦闘${Math.round(REC.t.battle/1000)} 他${Math.round(REC.t.other/1000)}）/ フロア ${tk.floor}/${TUNE.floors} / ノード ${tk.nodes}/${RUN.map.length*TUNE.floors} / 戦闘 ${REC.battles.length} / 再開 ${tk.resumed}回 / 種 ${RUN.seed}`);
   if (REC.floors.length) L.push(`[フロア] ` + REC.floors.map(f=>`F${f.floor}:${f.sec}秒まで(戦闘${f.battles})`).join(' '));
@@ -967,10 +980,12 @@ function buildOut(){
   L.push(`[敵別] ` + s.enemies.map(e=>`${e.id}:${e.win}/${e.n}戦 平均${e.avgT}T 暴発比${e.burstRate}% 過熱${e.heatPer}/戦 被害${e.takenPer}/戦`).join(' | '));
   L.push(`[過熱のターン] ` + REC.battles.map(b=>`${b.node}${b.id}@${b.pp0}:${b.heat.join(',')||'-'}/${b.turns}${b.win?'':'✗'}`).join(' '));
   L.push(`[人形] ${!tk.hadAuto?'なし':tk.party.filter(Boolean).map(m=>`${ROLE(m.role).name}=${DEF(m.type).name} `+(m.brokeAt?`壊れた(${m.brokeAt})`:m.alive?'生存':'壊れた')).join('・')} / [持ち帰り] 金+${tk.gold}${tk.goldLost?`(失${tk.goldLost})`:''} 素材+${tk.mat} → 金${META.gold} 素材${META.mat} 武器${META.weapon} 人形${partyText(META.party,false)}`);
+  L.push(`[直す手] ` + fixLine());
+  L.push(`[戦闘開始のHP 機/窯/注/投] ` + REC.battles.map(b=>`${b.node}:${(b.hp0||[]).map(v=>v===null?'-':v===0?'×':v).join('/')}`).join(' ') + ` / 人形の最低（戦闘中を含む） ` + dollMinLine());
   L.push(`[役の技] ` + roleLine());
   L.push(`[敵の狙い] ` + hitsLine());
   L.push(`[設計図] 拾得 ${tk.bpFound.length?tk.bpFound.map(id=>DEF(id).name).join('・'):'なし'} / 所持 ${META.blueprints.map(id=>DEF(id).name).join('・')} / 工房 ${META.ext.workshop?'開設済み':'未開設'}`);
-  L.push(`[Q1 ノード迷い] ${REC.q.q1||'未回答'} / [Q2 戦闘迷い] ${REC.q.q2||'未回答'} / [Q3 もう1回] ${REC.q.q3||'未回答'} / [Q4 敵で攻め方] ${REC.q.q4||'未回答'} / [Q5 絵で性質] ${REC.q.q5||'未回答'} / [Q6 圧の配分] ${REC.q.q6||'未回答'}`);
+  L.push(`[Q1 ノード迷い] ${REC.q.q1||'未回答'} / [Q2 戦闘迷い] ${REC.q.q2||'未回答'} / [Q3 もう1回] ${REC.q.q3||'未回答'} / [Q4 敵で攻め方] ${REC.q.q4||'未回答'} / [Q5 絵で性質] ${REC.q.q5||'未回答'} / [Q6 圧の配分] ${REC.q.q6||'未回答'} / [Q7 傷で打ち方] ${REC.q.q7||'未回答'}`);
   const byB = {}; REC.turns.forEach(t=>{ (byB[t.b]=byB[t.b]||[]).push(`${t.turn}:${t.cmd.slice(0,2)}@${t.ppBefore}/${t.epp}${t.plan?'+'+t.plan:''}${t.fell?'×'+t.fell:''}${t.burst?'!':''}${t.eb?'※':''}`); });   // p4-0.2.0＝×＝落ちた技・!＝味方の暴発。p6-0.1.0＝※＝このターンに敵が暴発
   L.push(`[手順] ` + REC.battles.map((b,i)=>`${b.node}${b.id}@${b.pp0}: ${(byB[i]||[]).join(' ')}`).join(' | '));
   $('out').value = L.join('\n');
