@@ -307,7 +307,7 @@
 </div>
 <script>
 'use strict';
-const VER = 'p8-0.2.0';
+const VER = 'p8-0.3.0';
 // ===== 調整値（すべて仮置き＝実機の感触で動かす）=====
 const TUNE = {
   hero:{hp:100, name:'機関士', en:'ENGINEER', kana:'きかんし'}, overflow:100,   // p4-0.2.0＝役の正式名称（マスター決定 2026-09-20＝機関区の持ち場の言葉・英語は VENT と同じ大文字）
@@ -763,6 +763,8 @@ function buildEnemyEls(){   // 敵の絵・図形を敵の数だけ作る。複�
     c.innerHTML = `<div class="en"><b id="ec-n${i}"></b><span id="ec-h${i}"></span></div><div class="bar"><i id="ec-hb${i}"></i></div><div class="ep"><span id="ec-p${i}"></span><span id="ec-m${i}"></span></div><div class="bar pp" id="ec-pb${i}"><i id="ec-pi${i}"></i>${mk}</div>`;
     cols.appendChild(c);
   });
+  $('e-pp-bar').querySelectorAll('.mk').forEach(x=>x.remove());   // p8-0.3.0＝敵1体〈強敵・ボス〉の圧のバーにも砲の線（マスター決定 2026-09-25）
+  if (!multi() && S.es[0].def.big){ const m = document.createElement('b'); m.className = 'mk'; m.style.left = (S.es[0].def.big.need / TUNE.overflow * 100) + '%'; $('e-pp-bar').appendChild(m); }
   $('e-one').style.display = multi() ? 'none' : ''; cols.style.display = multi() ? '' : 'none'; $('e-trait2').style.display = multi() ? '' : 'none';
   S.es.forEach((e, i) => {
     const w = document.createElement('div'); w.className = 'sprw en-el' + (e.sprId ? ' on' : ''); w.id = 'spr-w'+i; w.innerHTML = `<div class="spr" id="spr-e${i}"></div>`;
@@ -875,7 +877,7 @@ function armCmds(keep){   // keep＝先読みの更新だけ（考える時間�
   const c = TUNE.cmd, g = $('cmds'); g.innerHTML='';
   const items = [
     ['atk',  `攻撃 ${c.atk.dmg + WPN()}`, `圧+${c.atk.pp}${projText('atk')}`],
-    ['grd',  `防御`, `被害を半分・圧+${c.grd.pp}${projText('grd')}`],   // p8-0.1.0＝その手番の被害を全部半分（09 §1）。「このターンの」は1行に収まらない＝ルールの説明文に書く
+    ['grd',  `防御`, `機関士は半減・圧+${c.grd.pp}${projText('grd')}`],   // p8-0.3.0＝半分になるのは機関士の被害だけ（マスター決定 2026-09-25・「機関士の被害を半分」は2行に折れる＝09 §6-3 #9）   // p8-0.1.0＝その手番の被害を全部半分（09 §1）。「このターンの」は1行に収まらない＝ルールの説明文に書く
     ['smash',`強打 ${Math.round(c.smash.base + c.smash.rate*S.pp) + WPN()}`, `圧-${-c.smash.pp}（圧${c.smash.need}以上）${projText('smash')}`],
     ['vent', `放圧 VENT`, ventText()],
   ];
