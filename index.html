@@ -137,6 +137,20 @@
   .etag.dead { opacity:.35; }
   .etag .w { color:var(--warn); font-weight:700; }
   .etap { position:absolute; top:0; bottom:0; z-index:4; }
+  /* p8-0.2.0＝案A＝上の枠を敵の数で左右に割る〈左の列＝左の敵〉。列をタップ＝その敵を狙う。砲を持つ敵の圧のバーに砲の線（09 §6） */
+  .ecols { display:flex; gap:6px; }
+  .ecol { flex:1; min-width:0; padding:2px 5px 4px; border:2px solid transparent; border-radius:4px; }
+  .ecol.tgt { border-color:var(--brass); background:rgba(217,164,65,.13); }
+  .ecol.dead { opacity:.35; }
+  .ecol .en { display:flex; justify-content:space-between; gap:4px; font-size:13.5px; line-height:1.25; white-space:nowrap; }
+  .ecol .en b { overflow:hidden; text-overflow:ellipsis; }
+  .ecol.tgt .en b { color:var(--brass); }
+  .ecol .ep { display:flex; justify-content:space-between; font-size:12.5px; line-height:1.25; margin-top:2px; color:var(--dim); white-space:nowrap; }
+  .ecol .ep span { color:var(--text); }
+  .ecol .ep .w { color:var(--warn); font-weight:700; }
+  .ecol .bar { height:9px; }
+  .bar .mk { position:absolute; top:0; bottom:0; width:2px; margin-left:-1px; background:var(--text); box-shadow:0 0 0 1px rgba(0,0,0,.75); z-index:1; }
+  .etrait { font-size:12.5px; color:var(--dim); line-height:1.3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 </style>
 </head>
 <body>
@@ -166,7 +180,7 @@
       <p><b>4名固定</b>＝<b>機関士</b>（きかんし・主人公＝火力）・<b>窯番</b>（かまばん＝盾）・<b>注油手</b>（ちゅうゆしゅ＝回復）・<b>投炭手</b>（とうたんしゅ＝焚き）。<b>圧は4人で1本</b>＝全員の攻撃で溜まり、技で減る。溢れると全員が暴発する。</p>
       <p><b>戦闘では人形の行をタップすると「技」に切り替わる</b>（もう一度で「溜める」に戻る）。<b>機関士の手を押すとターンが進む</b>＝機関士→窯番→注油手→投炭手の順に動き、圧が足りない技は溜めるに落ちる。<b>溢れの判定はターンの終わりに1回</b>（途中で一時的に溢れても、技で下げれば暴発しない）。<b>機関士のボタンには「その手の後の圧」が出る</b>（計画した技を織り込み・溢れるなら「溢れ」）。窯番の<b>挑発</b>＝そのターンの敵の攻撃を自分が受ける／注油手の<b>整備</b>＝全員HP回復／投炭手の<b>過熱</b>＝敵の圧を上げる。機関士の<b>放圧 VENT</b>＝味方の圧を0にし、<b>その半分を敵の罐へ押し付ける</b>（敵が溢れればその場で暴発）。</p>
       <p><b>敵の攻撃は誰に来るか分からない</b>（敵ごとに偏りあり・砲は全員に）。</p>
-      <p><b>通常の戦闘は敵が2体</b>。<b>強敵とボスは1体</b>。<b>敵の絵か上の枠をタップすると狙いが変わる</b>＝機関士の攻撃・強打、人形の攻撃、投炭手の過熱は狙った敵へ。<b>圧は敵ごと</b>（暴発も1体ずつ）。<b>放圧</b>は押し付ける圧を生きている敵で<b>等分</b>する。<b>挑発</b>はそのターンの攻撃を<b>全部</b>窯番が受ける。<b>防御</b>はそのターンの被害を全部半分にする。敵は左から順に動く。</p>
+      <p><b>通常の戦闘は敵が2体</b>。<b>強敵とボスは1体</b>。<b>敵の絵か、上の枠の列をタップすると、その敵を狙う</b>＝機関士の攻撃・強打、人形の攻撃、投炭手の過熱は狙った敵へ。<b>圧は敵ごと</b>（暴発も1体ずつ）。<b>放圧</b>は押し付ける圧を生きている敵で<b>等分</b>する。<b>挑発</b>はそのターンの攻撃を<b>全部</b>窯番が受ける。<b>防御</b>は<b>機関士が受ける</b>そのターンの被害を全部半分にする（人形の被害は減らない）。敵は左から順に動く。</p>
       <p><b>傷は次の戦闘に残る</b>＝戦闘のあと、機関士はHP+20回復する。<b>人形は機械なので勝手には直らない</b>（直すのは休憩の「整備」・注油手の「整備」・宝の「応急油」だけ）。壊れた人形は、そのランでは戻らない。</p>
       <p><b>勝てば</b>金と素材と生き残った人形を持ち帰る。<b>機関士が倒れると</b>そのランの金を失い、素材と拾った設計図だけ持ち帰る。人形は3体とも壊れるが<b>設計図は残る</b>。</p>
       <p>ノードに着くたび自動保存。閉じても「続きから」でマップに戻る（戦闘の途中は保存しない）。</p>
@@ -196,11 +210,15 @@
 <section class="scr" id="s-battle">
   <div class="field">
     <div class="box" id="e-box">
+      <div id="e-one">   <!-- 敵1体〈強敵・ボス〉＝前と同じ枠 -->
       <div class="lbl"><span id="e-name">敵</span><span id="e-hp-t"></span></div>
       <div class="bar"><i id="e-hp"></i></div>
       <div class="lbl" style="margin-top:4px"><span>敵の圧 <span class="dim" id="e-trait"></span></span><span id="e-pp-t"></span></div>
       <div class="bar pp" id="e-pp-bar"><i id="e-pp"></i></div>
+      </div>
+      <div class="ecols" id="e-cols" style="display:none"></div>   <!-- p8-0.2.0＝敵2体以上＝敵ごとに1列（09 §6） -->
       <div class="next" id="e-next"></div>
+      <div class="etrait" id="e-trait2" style="display:none"></div>
     </div>
     <div class="stage" id="stage">
       <!-- p8-0.1.0＝敵の絵・図形・小札・タップの場所は buildEnemyEls() が敵の数だけ作る（ここ＝機関士の前に差し込む） -->
@@ -276,6 +294,8 @@
       <div class="row"><button data-q="q8" data-v="迷った">迷った</button><button data-q="q8" data-v="半々">半々</button><button data-q="q8" data-v="選ぶだけ">選ぶだけ</button></div>
       <p><b>Q9 狙っている敵が画面で分かりましたか</b></p>
       <div class="row"><button data-q="q9" data-v="はい">はい</button><button data-q="q9" data-v="半々">半々</button><button data-q="q9" data-v="いいえ">いいえ</button></div>
+      <p><b>Q10 敵のHPと圧を、タップせずに見比べられましたか</b></p>
+      <div class="row"><button data-q="q10" data-v="はい">はい</button><button data-q="q10" data-v="半々">半々</button><button data-q="q10" data-v="いいえ">いいえ</button></div>
     </div>
     <div class="box">
       <button id="b-copy">結果をコピー</button>
@@ -287,7 +307,7 @@
 </div>
 <script>
 'use strict';
-const VER = 'p8-0.1.0';
+const VER = 'p8-0.2.0';
 // ===== 調整値（すべて仮置き＝実機の感触で動かす）=====
 const TUNE = {
   hero:{hp:100, name:'機関士', en:'ENGINEER', kana:'きかんし'}, overflow:100,   // p4-0.2.0＝役の正式名称（マスター決定 2026-09-20＝機関区の持ち場の言葉・英語は VENT と同じ大文字）
@@ -736,6 +756,14 @@ function killMsg(i){ const e = S.es[i]; if (!multi() || e.hp>0 || e.dead) return
 function buildEnemyEls(){   // 敵の絵・図形を敵の数だけ作る。複数体の時だけ小札とタップの場所も作る（1体の戦闘は前と同じ画面）
   const st = $('stage'), hero = $('f-hero');
   st.querySelectorAll('.en-el').forEach(x=>x.remove());
+  const cols = $('e-cols'); cols.innerHTML = '';   // p8-0.2.0＝上の枠の列〈複数体の時だけ〉
+  if (multi()) S.es.forEach((e, i) => {
+    const c = document.createElement('div'); c.className = 'ecol'; c.dataset.i = i;
+    const mk = e.def.big ? `<b class="mk" style="left:${e.def.big.need / TUNE.overflow * 100}%"></b>` : '';   // 砲の線＝砲を撃ち始める圧〈big.need〉
+    c.innerHTML = `<div class="en"><b id="ec-n${i}"></b><span id="ec-h${i}"></span></div><div class="bar"><i id="ec-hb${i}"></i></div><div class="ep"><span id="ec-p${i}"></span><span id="ec-m${i}"></span></div><div class="bar pp" id="ec-pb${i}"><i id="ec-pi${i}"></i>${mk}</div>`;
+    cols.appendChild(c);
+  });
+  $('e-one').style.display = multi() ? 'none' : ''; cols.style.display = multi() ? '' : 'none'; $('e-trait2').style.display = multi() ? '' : 'none';
   S.es.forEach((e, i) => {
     const w = document.createElement('div'); w.className = 'sprw en-el' + (e.sprId ? ' on' : ''); w.id = 'spr-w'+i; w.innerHTML = `<div class="spr" id="spr-e${i}"></div>`;
     const f = document.createElement('div'); f.id = 'f-e'+i; f.className = 'fig enemy en-el' + ((e.def.id==='B'||e.def.id==='C'||e.def.id==='E')?' b':'') + (S.boss?' boss':''); f.textContent = e.def.id; f.style.display = e.sprId ? 'none' : '';
@@ -758,7 +786,7 @@ function startBattle(n){
   $('f-hero').className='fig hero';
   ROLES.forEach((r,i)=>{ const f=$('f-a'+i); f.className = 'fig auto a'+i + (S.party[r] ? '' : ' dead'); f.textContent = S.party[r] ? DEF(S.party[r].type).name.slice(0,1) : ROLE(r).name.slice(0,1); });
   const t = S.es[0].def;
-  setLog(multi() ? `<b>${groupName()}</b> が現れた（${ids.length}体）。敵の圧は <b>${pps.join('・')}</b> から。<b>敵の絵か上の枠をタップで狙いを変える</b>。` : `<b>${t.name}${S.boss?'（ボス）':''}</b> が現れた。敵の圧は <b>${pps[0]}</b> から。`);
+  setLog(multi() ? `<b>${groupName()}</b> が現れた（${ids.length}体）。敵の圧は <b>${pps.join('・')}</b> から。<b>敵の絵か上の枠の列をタップで狙う</b>。` : `<b>${t.name}${S.boss?'（ボス）':''}</b> が現れた。敵の圧は <b>${pps[0]}</b> から。`);
   ALLY_ORDER.forEach(r=>{ $(figOf(r)).style.display=''; allyWrap(r).className='sprw ally'; });   // p5＝前の戦闘の絵を消してから当て直す
   show('s-battle'); scrEnter('battle'); render(); armCmds(); fitSprite(); fitAllies();   // p5-0.3.0＝測るのは文字を入れた後〈前は前の画面の残りの高さで測っていた＝各ランの最初の戦闘で敵が約2倍に映った・05 §8〉
 }
@@ -775,16 +803,30 @@ function enemyNext(e){
 function togglePlan(r){ if (!S || S.over || !S.party[r]) return; S.plan[r] = !S.plan[r]; render(); armCmds(true); }   // p4-0.2.0＝計画が変わればボタンの先読みも更新。p5-0.1.0＝考える時間の起点は引き直さない（計器の穴＝07 §5-5-1 ※）
 function render(){
   const e=TE(), d=e.def, M=multi();
-  $('e-name').textContent = (M?'▼':'') + d.name + (S.boss?'（ボス）':'') + (M?`（狙い ${S.ti+1}/${S.es.length}）`:''); $('e-trait').textContent = '（'+d.trait+'）';   // p8-0.1.0＝上の枠＝狙っている敵の全部
-  $('e-hp-t').textContent = `${Math.max(0,e.hp)}/${d.hp}`; bar('e-hp', e.hp, d.hp);
-  $('e-pp-t').textContent = `${e.pp}/${TUNE.overflow}`; bar('e-pp', e.pp, TUNE.overflow); $('e-pp-bar').classList.toggle('hot', e.pp>=70);
+  if (!M){   // 敵1体〈強敵・ボス〉＝前と同じ枠
+    $('e-name').textContent = d.name + (S.boss?'（ボス）':''); $('e-trait').textContent = '（'+d.trait+'）';
+    $('e-hp-t').textContent = `${Math.max(0,e.hp)}/${d.hp}`; bar('e-hp', e.hp, d.hp);
+    $('e-pp-t').textContent = `${e.pp}/${TUNE.overflow}`; bar('e-pp', e.pp, TUNE.overflow); $('e-pp-bar').classList.toggle('hot', e.pp>=70);
+    $('e-trait2').textContent = '';
+  } else {   // p8-0.2.0＝敵ごとに1列＝名前・HP・圧・次の印。狙っている列は縁の色と▼（09 §6）
+    const short = S.es.length >= 3;
+    S.es.forEach((x,i)=>{
+      const c = $('e-cols').children[i], al = x.hp > 0; if (!c) return;
+      c.className = 'ecol' + (i===S.ti?' tgt':'') + (al?'':' dead');
+      $('ec-n'+i).textContent = (i===S.ti?'▼':'') + (short ? x.def.short : x.def.name) + (al?'':' ✕');
+      $('ec-h'+i).textContent = `${Math.max(0,x.hp)}/${x.def.hp}`; bar('ec-hb'+i, x.hp, x.def.hp);
+      $('ec-p'+i).innerHTML = `圧 <span>${al ? x.pp : '-'}</span>`; $('ec-m'+i).innerHTML = nextMark(x).trim();
+      bar('ec-pi'+i, al ? x.pp : 0, TUNE.overflow); $('ec-pb'+i).classList.toggle('hot', al && x.pp>=70);
+    });
+    $('e-trait2').textContent = `性質（${d.short}）: ${d.trait}`;
+  }
   S.es.forEach((x,i)=>{
     if (x.sprId){ $('spr-e'+i).classList.toggle('hot', x.pp >= TUNE.sprite.hotAt && x.hp > 0); $('spr-w'+i).style.opacity = x.hp > 0 ? '' : '.25'; }
     else { $('f-e'+i).classList.toggle('dead', x.hp<=0 && M); }
     const tg = $('e-tag'+i);   // p8-0.1.0＝小札＝狙い▼・HP・圧・次の印
-    if (tg){ tg.className = 'etag en-el' + (i===S.ti?' tgt':'') + (x.hp<=0?' dead':''); tg.innerHTML = x.hp>0 ? `${i===S.ti?'▼':''}${x.def.short} ${x.hp}<br>圧${x.pp}${nextMark(x)}` : `${x.def.short} ✕`; }
+    if (tg){ tg.className = 'etag en-el' + (i===S.ti?' tgt':'') + (x.hp<=0?' dead':''); tg.textContent = x.hp>0 ? `${i===S.ti?'▼':''}${x.def.short}` : `${x.def.short} ✕`; }   // p8-0.2.0＝小札は▼と名前だけ〈数字は上の枠の列へ移した〉
   });
-  $('e-next').innerHTML = enemyNext(e);
+  $('e-next').innerHTML = M ? enemyNext(e).replace(/^次: /, `次（${d.short}）: `) : enemyNext(e);
   const b = BON(); const bs = []; if (b.atk) bs.push(`攻+${b.atk}`); if (b.armor) bs.push(`被害-${b.armor}`); if (b.heat) bs.push(`過熱+${b.heat}`); if (b.start) bs.push(`開幕+${b.start}`); if (b.ovf) bs.push(`溢れ+${b.ovf}`);
   $('h-bonus').textContent = bs.length ? '（宝 '+bs.join(' ')+'）' : '';
   // パーティ4行＝主人公＋3役。人形の行はタップで「溜める／技」
@@ -878,6 +920,8 @@ function act(k){
   else if (k==='smash'){ const i=S.ti, e=TE(); const v=partyDmgTo(e, Math.round(c.base+c.rate*S.pp)+WPN()); e.hp-=v; bt.hit+=v; S.pp+=c.pp; msg+=`強打 <b>${v}</b>${to()}！`; hitE(i); msg += killMsg(i); }
   else if (k==='vent'){   // p6-0.1.0＝押し付ける（守りは外した・07 §6）。p8-0.1.0＝生きている敵で等分（問1 a）
     const al = S.es.map((x,i)=>i).filter(i=>S.es[i].hp>0), v = ventPush(), sh = ventShare();
+    const toBig = al.filter(i=>{ const x=S.es[i], b=x.def.big; return b && x.pp < b.need && x.pp + sh >= b.need && x.pp + sh < TUNE.overflow; }).length;   // p8-0.2.0＝観察＝放圧で砲の区間〈砲の線〜溢れの手前〉へ押し込んだ敵（09 §6-2 #5）
+    if (toBig){ REC.ventToBig = (REC.ventToBig||0) + toBig; bt.ventToBig = (bt.ventToBig||0) + toBig; }
     S.vent=true; S.pp=0; al.forEach(i=>{ S.es[i].pp += sh; }); REC.vents++; bt.vents++; REC.ventPushed=(REC.ventPushed||0)+v;
     msg += M ? `<b>放圧</b>＝敵${al.length}体へ各+${sh}を押し付けた。` : `<b>放圧</b>＝敵の罐へ圧+${v}を押し付けた。`;
     const b0 = REC.burstsE; al.forEach(i=>{ msg += checkEnemyBurst(i); msg += killMsg(i); });
@@ -1067,7 +1111,7 @@ function showResult(){
 }
 function buildOut(){
   const s = summarize(), tk = REC.take, L = [];
-  L.push(`[OVERPRESSURE 難易度② 敵2〜3体] ${VER} ${new Date().toLocaleString('ja-JP')}`);
+  L.push(`[OVERPRESSURE 難易度② 画面] ${VER} ${new Date().toLocaleString('ja-JP')}`);
   L.push(`[環境] ${window.navigator.standalone?'ホーム画面':'ブラウザ'} / 窓 ${innerWidth}x${innerHeight} / dpr ${devicePixelRatio} / ${location.protocol} / 画像 ${imgStatus()} 倍率${sprScale.toFixed(2)}`);
   L.push(`[ラン] ${tk.result} / 所要 ${Math.round(s.total/1000)}秒（マップ${Math.round(REC.t.map/1000)} 戦闘${Math.round(REC.t.battle/1000)} 他${Math.round(REC.t.other/1000)}）/ フロア ${tk.floor}/${TUNE.floors} / ノード ${tk.nodes}/${RUN.map.length*TUNE.floors} / 戦闘 ${REC.battles.length} / 再開 ${tk.resumed}回 / 種 ${RUN.seed}`);
   if (REC.floors.length) L.push(`[フロア] ` + REC.floors.map(f=>`F${f.floor}:${f.sec}秒まで(戦闘${f.battles})`).join(' '));
@@ -1076,7 +1120,7 @@ function buildOut(){
   L.push(`[選択の内訳] ` + REC.picks.map(p=>`${p.node}:${p.pick}${p.others.length?`(他:${p.others.join('/')})`:'(一本道)'}${(p.ms/1000).toFixed(1)}s`).join(' '));
   if (REC.choices.length) L.push(`[出来事/休憩] ` + REC.choices.map(c=>`${c.node}:${c.pick}${(c.ms/1000).toFixed(1)}s`).join(' '));
   L.push(`[宝] ` + (REC.items.length ? REC.items.map(i=>`${i.node}:${i.short}`).join(' ') : 'なし'));
-  L.push(`[戦闘] 総ターン ${s.n} / 1ターン ${s.secPerTurn.toFixed(1)}s / 連打率 ${s.rep}% / 技を使ったターン ${s.techTurns} / 考える時間 平均${(s.think/1000).toFixed(1)}s 中央値${(s.thinkMed/1000).toFixed(1)}s / 放圧 ${REC.vents}回 押し付けた圧 ${REC.ventPushed||0} 放圧のターンの敵の暴発 ${REC.ventBursts||0}回 / 落ちた技 ${(REC.skills.tank.fell||0)+(REC.skills.medic.fell||0)+(REC.skills.stoker.fell||0)}回 / 暴発 味方${REC.burstsP} 敵${REC.burstsE} / 狙い替え ${REC.retarget||0}回 / 放圧で2体以上が同時に暴発 ${REC.ventMulti||0}回 / 蒸気 ${REC.steam}回 吸気 ${REC.drained}回 反撃 ${REC.countered}回 / 分布 ${Object.entries(s.dist).map(([k,v])=>`${k}${v}`).join(' ')}`);
+  L.push(`[戦闘] 総ターン ${s.n} / 1ターン ${s.secPerTurn.toFixed(1)}s / 連打率 ${s.rep}% / 技を使ったターン ${s.techTurns} / 考える時間 平均${(s.think/1000).toFixed(1)}s 中央値${(s.thinkMed/1000).toFixed(1)}s / 放圧 ${REC.vents}回 押し付けた圧 ${REC.ventPushed||0} 放圧のターンの敵の暴発 ${REC.ventBursts||0}回 / 落ちた技 ${(REC.skills.tank.fell||0)+(REC.skills.medic.fell||0)+(REC.skills.stoker.fell||0)}回 / 暴発 味方${REC.burstsP} 敵${REC.burstsE} / 狙い替え ${REC.retarget||0}回 / 放圧で2体以上が同時に暴発 ${REC.ventMulti||0}回 / 放圧で砲の区間へ押し込んだ ${REC.ventToBig||0}体 / 蒸気 ${REC.steam}回 吸気 ${REC.drained}回 反撃 ${REC.countered}回 / 分布 ${Object.entries(s.dist).map(([k,v])=>`${k}${v}`).join(' ')}`);
   L.push(`[敵別] ` + s.enemies.map(e=>`${e.id}:${e.win}/${e.n}戦 平均${e.avgT}T 暴発比${e.burstRate}% 過熱${e.heatPer}/戦 被害${e.takenPer}/戦`).join(' | '));
   L.push(`[過熱のターン] ` + REC.battles.map(b=>`${b.node}${b.id}@${b.pp0}:${b.heat.join(',')||'-'}/${b.turns}${b.win?'':'✗'}`).join(' '));
   L.push(`[人形] ${!tk.hadAuto?'なし':tk.party.filter(Boolean).map(m=>`${ROLE(m.role).name}=${DEF(m.type).name} `+(m.brokeAt?`壊れた(${m.brokeAt})`:m.alive?'生存':'壊れた')).join('・')} / [持ち帰り] 金+${tk.gold}${tk.goldLost?`(失${tk.goldLost})`:''} 素材+${tk.mat} → 金${META.gold} 素材${META.mat} 武器${META.weapon} 人形${partyText(META.party,false)}`);
@@ -1085,7 +1129,7 @@ function buildOut(){
   L.push(`[役の技] ` + roleLine());
   L.push(`[敵の狙い] ` + hitsLine());
   L.push(`[設計図] 拾得 ${tk.bpFound.length?tk.bpFound.map(id=>DEF(id).name).join('・'):'なし'} / 所持 ${META.blueprints.map(id=>DEF(id).name).join('・')} / 工房 ${META.ext.workshop?'開設済み':'未開設'}`);
-  L.push(`[Q1 ノード迷い] ${REC.q.q1||'未回答'} / [Q2 戦闘迷い] ${REC.q.q2||'未回答'} / [Q3 もう1回] ${REC.q.q3||'未回答'} / [Q4 敵で攻め方] ${REC.q.q4||'未回答'} / [Q5 絵で性質] ${REC.q.q5||'未回答'} / [Q6 圧の配分] ${REC.q.q6||'未回答'} / [Q7 傷で打ち方] ${REC.q.q7||'未回答'} / [Q8 狙いで迷い] ${REC.q.q8||'未回答'} / [Q9 狙いが分かる] ${REC.q.q9||'未回答'}`);
+  L.push(`[Q1 ノード迷い] ${REC.q.q1||'未回答'} / [Q2 戦闘迷い] ${REC.q.q2||'未回答'} / [Q3 もう1回] ${REC.q.q3||'未回答'} / [Q4 敵で攻め方] ${REC.q.q4||'未回答'} / [Q5 絵で性質] ${REC.q.q5||'未回答'} / [Q6 圧の配分] ${REC.q.q6||'未回答'} / [Q7 傷で打ち方] ${REC.q.q7||'未回答'} / [Q8 狙いで迷い] ${REC.q.q8||'未回答'} / [Q9 狙いが分かる] ${REC.q.q9||'未回答'} / [Q10 見比べ] ${REC.q.q10||'未回答'}`);
   const byB = {}; REC.turns.forEach(t=>{ (byB[t.b]=byB[t.b]||[]).push(`${t.turn}:${t.cmd.slice(0,2)}@${t.ppBefore}/${t.epp}${t.plan?'+'+t.plan:''}${t.fell?'×'+t.fell:''}${t.burst?'!':''}${t.eb?'※':''}`); });   // p4-0.2.0＝×＝落ちた技・!＝味方の暴発。p6-0.1.0＝※＝このターンに敵が暴発
   L.push(`[手順] ` + REC.battles.map((b,i)=>`${b.node}${b.id}@${b.pp0}: ${(byB[i]||[]).join(' ')}`).join(' | '));
   $('out').value = L.join('\n');
@@ -1095,7 +1139,7 @@ $('b-sortie').addEventListener('click', ()=>{ if (RUN && !RUN.done){ if (RUN.pen
 $('b-wpn').addEventListener('click', ()=>{ if (RUN&&!RUN.done) return; const c=TUNE.room.weapon.costs[META.weapon]; if (c==null || META.gold<c) return; META.gold -= c; META.weapon++; saveMeta(); renderRoom(); });
 $('b-map-room').addEventListener('click', ()=>{ saveRun(); renderRoom(); });
 $('b-rw').addEventListener('click', nodeDone);
-$('e-box').addEventListener('click', cycleTarget);   // p8-0.1.0＝上の枠をタップ＝次の敵を狙う
+$('e-box').addEventListener('click', ev => { const c = ev.target.closest('.ecol'); if (c) setTarget(+c.dataset.i); });   // p8-0.2.0＝上の枠の列をタップ＝その敵を狙う〈旧＝枠のどこでも次の敵へ送る〉
 $('b-fl').addEventListener('click', showMap);
 $('b-tr').addEventListener('click', nodeDone);
 $('b-ev-a').addEventListener('click', ()=>evPick('a'));
