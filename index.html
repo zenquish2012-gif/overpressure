@@ -25,6 +25,11 @@
   .dim { color:var(--dim); font-size:15px; }
   .warn { color:var(--warn); font-weight:700; }
   .ok { color:var(--ok); font-weight:700; }
+  .unread { color:var(--bg); background:var(--brass); border-radius:4px; padding:0 5px; font-size:12.5px; font-weight:700; margin-left:6px; }   /* p9-0.4.0＝部屋の記録の「未読」（10 §6-1） */
+  .unread-chip { border-color:var(--brass) !important; color:var(--brass); cursor:pointer; }
+  details.rec { border-bottom:1px solid var(--line); padding:6px 0; font-size:15px; }
+  details.rec summary { color:var(--text); font-size:15px; }
+  details.rec .rec-full { color:var(--dim); font-size:14px; line-height:1.5; margin:6px 0 2px; }
   .box { background:linear-gradient(#2a2118,#1a140f); border:2px solid #d9c9a6; border-radius:4px; box-shadow:inset 0 0 0 2px #14100c, inset 0 0 0 3px var(--brass2); padding:8px 12px; }   /* p3＝FF6 の窓の形〈二重の枠・中は暗色〉を本作の色〈鉄と真鍮〉で */
   button { font:inherit; color:var(--text); background:#2c2117; border:2px solid var(--brass2); border-radius:5px; padding:6px 6px; min-height:54px; width:100%; text-align:center; }
   button:active { background:#3d2e1e; }
@@ -159,11 +164,11 @@
 <!-- ===== 自分の部屋 ===== -->
 <section class="scr on" id="s-room">
   <div class="row" style="justify-content:space-between;align-items:baseline"><h1>OVERPRESSURE</h1><span class="ver" id="ver"></span></div>
-  <p class="dim">Phase 4 断片＝機関区の記録が開く（数値は仮置き）</p>
+  <p class="dim">Phase 4 断片＝記録は部屋でまとめて読む（数値は仮置き）</p>
   <div class="scrollp">
     <div class="box">
       <h2>自分の部屋</h2>
-      <div class="stat"><span>金 <b id="m-gold"></b></span><span>素材 <b id="m-mat"></b></span><span>武器 <b id="m-wpn"></b></span><span>人形 <b id="m-auto"></b></span><span>遠征 <b id="m-runs"></b></span></div>
+      <div class="stat"><span>金 <b id="m-gold"></b></span><span>素材 <b id="m-mat"></b></span><span>武器 <b id="m-wpn"></b></span><span>人形 <b id="m-auto"></b></span><span>遠征 <b id="m-runs"></b></span><span id="m-unread" class="unread-chip" style="display:none">記録 未読 <b id="m-unread-n"></b></span></div>
       <p class="dim" id="m-note"></p>
     </div>
     <button class="big" id="b-sortie">出撃する</button>
@@ -175,8 +180,10 @@
     </div>
     <div class="box">   <!-- p9-0.1.0＝断片の全文はここ（10 §1-1・問2 a）。開いた回数を数える -->
       <details id="rec-details"><summary>記録 <b id="rec-count"></b></summary>
-        <p class="dim">機関区で開いた記録。開いた場面では抜きだけ、ここで全文。未回収は「――」。</p>
+        <p class="dim">機関区で開いた記録。題をタップすると全文が開く。「未読」は、まだ全文を開いていない記録。未回収は「――」。</p>
         <div id="rec-list"></div>
+        <button id="b-rec-copy" style="margin-top:8px;min-height:44px">読んだ記録をコピー（サイファへ）</button>
+        <textarea id="rec-out" readonly style="display:none"></textarea>
       </details>
     </div>
     <div class="box">
@@ -190,7 +197,7 @@
       <p><b>傷は次の戦闘に残る</b>＝戦闘のあと、機関士はHP+20回復する。<b>人形は機械なので勝手には直らない</b>（直すのは休憩の「整備」・注油手の「整備」・宝の「応急油」だけ）。壊れた人形は、そのランでは戻らない。</p>
       <p><b>勝てば</b>金と素材と生き残った人形を持ち帰る。<b>機関士が倒れると</b>そのランの金を失い、素材と拾った設計図だけ持ち帰る。人形は3体とも壊れるが<b>設計図は残る</b>。</p>
       <p>ノードに着くたび自動保存。閉じても「続きから」でマップに戻る（戦闘の途中は保存しない）。</p>
-      <p><b>記録の断片</b>＝人形を連れて勝つ・敵を倒す・休憩の「整備」で人形を直す・出来事「図面の切れ端」で拾う、と機関区の記録が開く（<b>1ランに3本まで</b>。強敵・ボス・切れ端は数えない）。開いた場面では抜きだけ。<b>全文は部屋の「記録」</b>で読める。</p>
+      <p><b>記録の断片</b>＝人形を連れて勝つ・敵を倒す・休憩の「整備」で人形を直す・出来事「図面の切れ端」で拾う、と機関区の記録が開く（<b>1ランに3本まで</b>。強敵・ボス・切れ端は数えない）。開くと、報酬の画面などに1行で知らせる。<b>中身は部屋の「記録」</b>で読む（まだ読んでいないものに「未読」）。</p>
       <p class="dim">ランが終わると結果画面が出るので「コピー」してサイファへ。</p>
     </div>
     <div class="box">
@@ -209,6 +216,7 @@
 <section class="scr" id="s-map">
   <div class="stat"><span>主 <b id="mp-h"></b></span><span>人形 <b id="mp-a"></b></span><span>圧 <b id="mp-pp"></b></span><span>金 <b id="mp-g"></b></span><span>素材 <b id="mp-m"></b></span></div>
   <p class="dim" id="mp-hint">光っているノードを選ぶ（先は全部見える・上がボス）</p>
+  <p class="ok" id="mp-frag" style="display:none"></p>   <!-- p9-0.4.0＝休憩の整備・切れ端で開いた記録の知らせ（10 §6-1） -->
   <div class="map" id="map"><div class="map-inner" id="map-inner"><svg id="map-svg"></svg><div id="map-nodes"></div></div></div>
   <button id="b-map-room" style="min-height:44px">部屋へ戻る（遠征は保存される）</button>
 </section>
@@ -277,13 +285,6 @@
   <button class="big" id="b-rs-b"></button>
 </section>
 
-<!-- ===== 断片（p9-0.1.0）===== -->
-<section class="scr" id="s-frag">
-  <h2 id="fg-title"></h2>
-  <div class="box" id="fg-body"></div>
-  <button class="big" id="b-fg">閉じる</button>
-</section>
-
 <!-- ===== 結果 ===== -->
 <section class="scr" id="s-result">
   <h2 id="r-title">結果</h2>
@@ -323,7 +324,7 @@
 </div>
 <script>
 'use strict';
-const VER = 'p9-0.2.0';
+const VER = 'p9-0.4.0';
 // ===== 調整値（すべて仮置き＝実機の感触で動かす）=====
 const TUNE = {
   hero:{hp:100, name:'機関士', en:'ENGINEER', kana:'きかんし'}, overflow:100,   // p4-0.2.0＝役の正式名称（マスター決定 2026-09-20＝機関区の持ち場の言葉・英語は VENT と同じ大文字）
@@ -383,7 +384,7 @@ const TUNE = {
   rest:{ overflowUp:10 },
   events:{   // p9-0.1.0＝出来事2種（10 §1-1・問4 a）。steam＝従来の「蒸気だまり」／scrap＝「図面の切れ端」＝断片の入口〈拾う＝記録が1本開く・置いていく＝素材〉。scrapRate＝切れ端の残りがあるとき地図に出る割合〈種つき〉
     steam:{ name:'蒸気だまり', text:'配管の裂け目から蒸気が噴いている。', a:{label:'蒸気を汲む', gold:15, hp:-10}, b:{label:'一息つく', heal:15} },
-    scrap:{ name:'図面の切れ端', text:'足場の隙間に紙が挟まっている。図面の主の手だ。', a:{label:'拾う', note:'記録が1本開く'}, b:{label:'置いていく', mat:2} },
+    scrap:{ name:'図面の切れ端', text:'足場のすき間に、紙が挟まっている。親方の字だ。', a:{label:'拾う', note:'記録が1本開く'}, b:{label:'置いていく', mat:2} },
     scrapRate:0.6,
   },
   frag:{ perRun:3 },   // p9-0.1.0＝1ランに開く断片の上限〈数えるものだけ。強敵・ボス・切れ端・最後の記録は数えない〉（10 §1-1）
@@ -508,7 +509,7 @@ const partyText = (party, withHp) => { const xs = ROLES.map(r => { const m = par
 const ENEMY = id => TUNE.enemies.find(e=>e.id===id);
 const ITEM = id => TUNE.treasure.find(t=>t.id===id);
 const cur = () => RUN.map[RUN.li][RUN.ii];
-function newMeta(){ return { gold:0, mat:0, weapon:0, party:{tank:'shield', medic:null, stoker:null}, blueprints:TUNE.blueprint.start.slice(), ext:{}, runs:0, wins:0, frag:{opened:{}, views:0} }; }   // p9-0.1.0＝frag＝開いた断片〈id→ラン番号〉と部屋の記録を開いた回数
+function newMeta(){ return { gold:0, mat:0, weapon:0, party:{tank:'shield', medic:null, stoker:null}, blueprints:TUNE.blueprint.start.slice(), ext:{}, runs:0, wins:0, frag:{opened:{}, views:0, read:{}, readLog:[]} }; }   // p9-0.1.0＝frag＝開いた断片〈id→ラン番号〉と部屋の記録を開いた回数
 function newRec(){ return { ver:VER, t:{map:0,battle:0,other:0}, picks:[], choices:[], battles:[], bt:null, turns:[], burstsP:0, burstsE:0, steam:0, drained:0, countered:0, vents:0, dodged:0, retarget:0, ventMulti:0, items:[], bpFound:[], q:{}, take:null, floors:[], hits:{hero:0, tank:0, medic:0, stoker:0, all:0}, skills:{ tank:{fired:0, absorbed:0, fell:0}, medic:{fired:0, healed:0, fell:0}, stoker:{fired:0, finish:0, fell:0, held:0} }, steamBursts:0, projMiss:0 }; }
 function saveMeta(){ try{ localStorage.setItem(KEY_META, JSON.stringify(META)); }catch(e){} }
 function saveRun(){ try{ if (RUN) localStorage.setItem(KEY_RUN, JSON.stringify(RUN)); else localStorage.removeItem(KEY_RUN); }catch(e){} }
@@ -527,6 +528,8 @@ function migrateMeta(m){   // Phase 1〜3 の記録を引き継ぐ。p4＝枠2�
   delete m.autoAlive; delete m.autoType;
   if (!m.ext) m.ext = {};
   if (!m.frag) m.frag = {opened:{}, views:0};   // p9-0.1.0
+  if (!m.frag.read){ m.frag.read = {}; Object.keys(m.frag.opened||{}).forEach(id=>{ m.frag.read[id] = 'pre'; }); }   // p9-0.4.0＝移行時に開いている記録は「読んだ」扱い＝2版の全文は Word で読み済み（10 §6-1）
+  if (!m.frag.readLog) m.frag.readLog = [];
   return m;
 }
 function loadAll(){
@@ -620,34 +623,37 @@ const nodeTag = n => n.enemies ? `戦 ${n.enemies.map(id=>ENEMY(id).short).join(
 // kind＝doll〈role・sub 1 図面／2 修理／3 壊れ〉・enemy〈enemy〉・scrap・last。free＝1ランの上限に数えない。hide＝部屋の未回収の欄で条件を伏せる。ex＝抜き〈開いた場面〉・full＝全文〈部屋の記録〉
 /*FRAG-BEGIN*/
 const FRAG = [
-  {"id":"shield_1","kind":"doll","role":"tank","sub":1,"title":"窯番の図面","cond":"窯番を連れて戦闘に勝つと開く","ex":"胴の装甲の厚さだけが、三度書き直してある。厚くするたび、注記が一行ずつ短くなる。","full":"窯番の図面。胴の装甲の厚さだけが三度書き直してある。一度目の注記「炉の前に立つ」。二度目「炉の前に立つ。退かない」。三度目は数字だけ。／余白に、圧の管の引き回しが足してある。これは図面の主の手ではない。私が足した。弁も付けた。"},
-  {"id":"shield_2","kind":"doll","role":"tank","sub":2,"title":"装甲の継ぎ目","cond":"休憩の整備で窯番を直すと開く","ex":"叩けば直る。窯番はそういう作りだ。図面の主もそう書いている。「継ぎ目は残せ」。","full":"休憩で窯番を直した。凹みを叩き出し、継ぎ目のリベットを打ち直す。図面の注記「継ぎ目は残せ。次に直すのは別の手だ」。／図面の主は、自分の後に誰かが直すことを前提に描いている。この人形だけは。"},
-  {"id":"shield_3","kind":"doll","role":"tank","sub":3,"title":"窯番の設計図（残る）","cond":"？","hide":true,"ex":"炉の前で壊れた。図面は残った。装甲の裏に、初めて読める注記があった。","full":"窯番が壊れた。装甲を外して初めて、裏に彫った一行が読めた。「壊れる形に組め。壊れない形は、止まる形だ」。／図面は残っている。組み直せる。次は継ぎ目をもう一つ増やす。"},
-  {"id":"medic_1","kind":"doll","role":"medic","sub":1,"title":"注油手の図面","cond":"注油手を連れて戦闘に勝つと開く","ex":"油差しの図面に「弁の油は薄く」とある。機関区の弁は、開かないように締めてあるのに。","full":"注油手の図面。役は油差しと、弁の当たりの調整。注記「弁の油は薄く。厚いと弁が開かない」。／機関区の弁は今、開かないように締めてある。この注記は、締める前に書かれたものだ。図面の主は、弁を開けておくつもりだった。"},
-  {"id":"medic_2","kind":"doll","role":"medic","sub":2,"title":"油の減り","cond":"休憩の整備で注油手を直すと開く","ex":"この人形は自分の油を使って他を直す。図面の書き込み「油は回せ。溜めるな」。圧と同じ言い方だ。","full":"注油手を直した。油壺が空に近い。この人形は自分の油を使って、他を直している。／図面の余白の書き込み「油は回せ。溜めるな」。圧の話と同じ言い方だ。図面の主は、溜めることを嫌っていた。少なくとも、これを書いた時は。"},
-  {"id":"medic_3","kind":"doll","role":"medic","sub":3,"title":"注油手の設計図（残る）","cond":"？","hide":true,"ex":"壊れる前に、全員を一度ずつ直していた。図面どおりの順だった。","full":"注油手が壊れた。壊れる前に、全員を一度ずつ直していた。順番まで図面どおりだ。「機関士、窯番、投炭手。自分は最後」。／図面の主は順番まで書いていた。自分を最後に置く癖は、図面のあちこちにある。"},
-  {"id":"stoker_1","kind":"doll","role":"stoker","sub":1,"title":"投炭手の図面","cond":"投炭手を連れて戦闘に勝つと開く","ex":"投炭手の図面には、自分の炉の寸法が無い。代わりに「相手の炉に焚べろ」とある。","full":"投炭手の図面。焚き手なのに、自分の炉の寸法が書かれていない。注記「相手の炉に焚べろ。溢れさせろ」。／書き足しの字だ。保守機械が暴走した後に足したのだと思う。図面の主は、機械を止める側に回っていた。少なくとも一度は。"},
-  {"id":"stoker_2","kind":"doll","role":"stoker","sub":2,"title":"炉の煤","cond":"休憩の整備で投炭手を直すと開く","ex":"炉を掃除した。煤の下に刻印があった。図面の主の刻印と同じ。この炉は、機関層の炉の縮尺だ。","full":"投炭手の炉を掃除した。煤の下に刻印。図面の主の道具に彫ってあるのと同じ印だ。／炉の形は、機関層の大きな炉の縮尺になっている。図面の主は、止めたい相手の炉を、そのまま小さく組んでいた。"},
-  {"id":"stoker_3","kind":"doll","role":"stoker","sub":3,"title":"投炭手の設計図（残る）","cond":"？","hide":true,"ex":"最後まで相手の炉に焚べていた。注記「溢れさせろ」の下に、小さく「自分は溢れるな」。","full":"投炭手が壊れた。最後まで相手の炉に焚べていた。／図面の注記「溢れさせろ」の下に、小さい字で「自分は溢れるな」。読めたのは壊れてからだ。次に組むときは、この一行を先に読む。"},
-  {"id":"e_A","kind":"enemy","enemy":"A","title":"保守機械の主力","cond":"装甲機兵を倒すと開く","ex":"機兵の胴に札。「配管層・巡回・第一」。もとは見回りの機械だ。溜まりやすいのは、逃がす弁を外されているから。","full":"装甲機兵を止めた。胴に札「配管層・巡回・第一」。もとは管を見回る機械だ。／弁の座に、外した痕。図面の主の工具の痕と同じだ。圧を上げるとき、逃がす機械から先に弁を外した。だから溜まりやすく、逃がさない。"},
-  {"id":"e_B","kind":"enemy","enemy":"B","title":"放圧の機械","cond":"放圧蟲を倒すと開く","ex":"蟲の背の弁は生きている。圧60で開く。機関区で唯一、まだ放圧している機械だ。","full":"放圧蟲を止めた。背の弁は生きている。圧60で開く。機関区で、まだ放圧している機械はこれだけだ。／蒸気を浴びせてくるのは、放圧の向きが管から外れているだけだ。もとは管へ逃がしていた。弁を残された理由は、札に無い。"},
-  {"id":"e_C","kind":"enemy","enemy":"C","title":"歯車の検査機","cond":"歯車蟲を倒すと開く","ex":"甲羅の歯車は検査の型板だ。触れた物を全部「検査」する。反撃は、その癖だ。","full":"歯車蟲を止めた。甲羅の歯車は、噛み合わせを見る型板だ。触れた物を全部「検査」する。反撃は、その癖が残っているだけだ。／炉を持たないから暴発に強い。図面の主が最初に組んだ保守機械だと、札の番号が言っている。"},
-  {"id":"e_A2","kind":"enemy","enemy":"A2","free":true,"title":"改修の記録","cond":"装甲機兵・改を倒すと開く","ex":"機兵改の装甲の内側に、改修の日付と一行。「圧を上げる。弁は残す」。この一体だけ、弁が残っていた。","full":"配管層の最後の一体を止めた。装甲の内側に改修の記録。日付は三つ。一つ目「上の要求。圧を上げる。弁は残す」。二つ目「さらに上げる。弁は締める」。三つ目は日付だけ。／図面の主は、上げるたびに一行書いた。三つ目には、書くことが無かったのだと思う。弁は締めてあるが、外してはいない。"},
-  {"id":"e_D","kind":"enemy","enemy":"D","title":"炉の掃除機","cond":"蒸気砲台を倒すと開く","ex":"砲身は、もとは炉の煤を吹き飛ばす管だ。今は炉に背を向けて据わっている。誰かが向きを変えた。","full":"蒸気砲台を止めた。砲身は、もとは炉の煤を吹き飛ばす管だ。重いのは、炉に向けて据えるものだから。／今は炉に背を向けて据わっている。誰かが向きを変えた。台座の刻印は削ってある。"},
-  {"id":"e_E","kind":"enemy","enemy":"E","title":"排気の走り手","cond":"排気狼を倒すと開く","ex":"狼は排気口を走って詰まりを取る機械だ。弱った者を狙うのは、弱い流れを探す癖が残っているから。","full":"排気狼を止めた。排気口を走って詰まりを取る機械だ。弱った者を狙うのは、弱い流れを探す癖が残っているから。／圧50で放圧して持ち直すのは、排気で冷えるから。壊れているのではない。仕事をしている。相手が変わっただけだ。"},
-  {"id":"e_F","kind":"enemy","enemy":"F","title":"吸気の機械","cond":"吸気機兵を倒すと開く","ex":"吸気機兵は管から圧を吸って炉に戻す機械だ。私の背の機関を、管だと思っている。","full":"吸気機兵を止めた。管から圧を吸って炉に戻す機械だ。味方の圧を吸うのは、私の背の機関を管だと思っているから。機関士を狙うのは、圧の元を探すからだ。／図面の主の注記「吸気は最後まで残せ。止めるときに要る」。残っている。"},
-  {"id":"e_D2","kind":"enemy","enemy":"D2","free":true,"title":"改修の砲台","cond":"蒸気砲台・改を倒すと開く","ex":"砲台改の砲身に、削って消した刻印。読める字は「上」だけ。機関層の砲は、上に向けて据えてある。","full":"蒸気砲台・改を止めた。砲身に、削って消した刻印。読めるのは「上」の一字だけ。／機関層の砲はどれも、上に向けて据えてある。炉の煤を吹く管を、上へ向けた。何を吹くつもりだったのかは、書いていない。"},
-  {"id":"e_G","kind":"enemy","enemy":"G","free":true,"title":"止まらない機関","cond":"過圧機関を倒すと開く","ex":"機関の弁の座は空だ。外したのではない。最初から無い。図面の主が、弁の無い機関を組んだ。","full":"過圧機関を止めた。今日の分は。安全弁の座が無い。外した痕も無い。最初から弁を持たない図面だ。／炉の扉の裏に、図面の主の最後の一行。「上は止めるなと言う。止めない機関を組む。弁は私が持つ」。／弁を持ったまま、図面の主は機関層から戻っていない。機関は止まらない。だから私が、放圧しに降りる。"},
-  {"id":"scrap_1","kind":"scrap","free":true,"title":"切れ端・一","cond":"出来事「図面の切れ端」で拾うと開く","ex":"人形の図面の元になった紙だ。端に「保守機械・共通」。人形と敵は、同じ紙から起こしてある。","full":"足場の隙間に挟まっていた紙。人形の図面の元になった紙だ。端に「保守機械・共通」。／人形と敵は、同じ紙から起こしてある。違いは、私が弁を付けたか、図面の主が弁を外したかだけだ。"},
-  {"id":"scrap_2","kind":"scrap","free":true,"title":"切れ端・二","cond":"出来事「図面の切れ端」で拾うと開く","ex":"計算の跡。上の要求の数字が三度書き換えてある。増えるたび、下に「弁」と書いて線で消してある。","full":"計算の跡。上の要求の数字が三度書き換えてある。増えるたびに、下に「弁」と書いて、線で消してある。／消した線は三本とも一度で引いてある。迷った跡は無い。"},
-  {"id":"scrap_3","kind":"scrap","free":true,"title":"切れ端・三","cond":"出来事「図面の切れ端」で拾うと開く","ex":"図面の主の字で一行だけ。「自分の手を離れて回る形にしろ。私にはできなかった」。","full":"図面の主の字で一行だけ。「自分の手を離れて回る形にしろ。私にはできなかった」。／人形の図面は、この一行の後に描かれている。番号がそう言っている。図面の主は、自分の代わりを組もうとして、間に合わなかった。"},
-  {"id":"last","kind":"last","free":true,"title":"最後の記録","cond":"？","hide":true,"ex":"全部読んだ。図面の主は弁を持って降りた。私は弁を人形に付けた。今日の放圧、終わり。","full":"全部読んだ。図面の主は弁を持って機関層へ降り、戻らなかった。私は弁を人形に付けた。人形は壊れても図面が残る。私が降りなくても、いずれ人形だけで降りられる形にする。／機関は止まらない。上が蒸気を使う限り、明日も過圧する。今日の放圧、終わり。明日の分は明日。"}
+  {"id":"shield_1","kind":"doll","role":"tank","sub":1,"title":"窯番の図面","cond":"窯番を連れて戦闘に勝つと開く","ex":"窯番の図面は、親方が描いたものだ。安全弁を付ける場所だけが、空けてあった。","full":"窯番の図面は、親方が描いたものだ。胴の装甲の厚さだけ、三回も描き直してある。一回目の書き込みは「炉の前に立つ」。三回目は、数字だけだった。／図面には、安全弁を付ける場所だけが空けてあった。安全弁とは、圧が上がりすぎたときに蒸気を逃がす栓だ。親方が戻らなくなってから、私はそこに安全弁を付けて、窯番を組み直した。"},
+  {"id":"shield_2","kind":"doll","role":"tank","sub":2,"title":"装甲の継ぎ目","cond":"休憩の整備で窯番を直すと開く","ex":"窯番のへこみを叩いて直した。図面に、親方の字で「継ぎ目は残せ」とある。","full":"休憩のあいだに、窯番のへこみを叩いて直した。継ぎ目の留め金も、打ち直した。図面には、親方の字で「継ぎ目は残せ。次に直すのは別の手だ」とある。／親方は、自分のあとに誰かが直すことを考えて描いていた。私が親方に最初に教わったのも、この直し方だった。"},
+  {"id":"shield_3","kind":"doll","role":"tank","sub":3,"title":"窯番の設計図（残る）","cond":"？","hide":true,"ex":"窯番が、炉の前で壊れた。装甲の裏に、親方の字が彫ってあった。","full":"窯番が壊れた。装甲を外すと、裏に親方の字が彫ってあった。「壊れてもいい。直せる形に組め」。／図面が残っていれば、何度でも組み直せる。親方は、そのつもりで描いていた。次は、継ぎ目をもう一つ増やして組む。"},
+  {"id":"medic_1","kind":"doll","role":"medic","sub":1,"title":"注油手の図面","cond":"注油手を連れて戦闘に勝つと開く","ex":"注油手の図面に「栓の油は薄く」とある。安全弁が開きやすいように、という意味だ。","full":"注油手は、油を差して回る人形だ。図面の書き込みは「栓の油は薄く。厚いと開かない」。この栓は、圧を逃がす栓、つまり安全弁のことだ。／今の機関区では、安全弁はどれも閉められている。この書き込みは、閉める前に書かれたものだ。親方も、最初は安全弁を開けておくつもりだった。"},
+  {"id":"medic_2","kind":"doll","role":"medic","sub":2,"title":"油の減り","cond":"休憩の整備で注油手を直すと開く","ex":"注油手を直した。油の入れ物が、ほとんど空だった。自分の油で、ほかの人形を直していたのだ。","full":"休憩のあいだに、注油手を直した。油の入れ物が、ほとんど空になっていた。この人形は、自分の油を使って、ほかの人形を直している。／図面の端に、親方の字で「油は回せ。溜めるな」とある。圧についても、親方は同じことを言っていた。溜めずに回して、逃がせと。"},
+  {"id":"medic_3","kind":"doll","role":"medic","sub":3,"title":"注油手の設計図（残る）","cond":"？","hide":true,"ex":"注油手が壊れた。壊れる前に、全員を一度ずつ直していた。図面に書かれた順番どおりだった。","full":"注油手が壊れた。壊れる前に、全員を一度ずつ直していた。図面には、直す順番まで書いてある。「機関士、窯番、投炭手。自分は最後」。／親方も、自分をいつも最後に回す人だった。図面のあちこちに、同じ書き方がある。"},
+  {"id":"stoker_1","kind":"doll","role":"stoker","sub":1,"title":"投炭手の図面","cond":"投炭手を連れて戦闘に勝つと開く","ex":"投炭手の図面には、自分の炉の大きさが書いていない。「相手の炉に燃料を入れろ」とだけある。","full":"投炭手は、燃料を入れて炉の火を強める人形だ。ところが図面には、自分の炉の大きさが書いていない。書き込みは「相手の炉に燃料を入れろ。溢れさせろ」。／これは、見回りの機械が暴れ出したあとに、親方が書き足した字だ。親方は一度、暴れる機械を止める側に回ろうとしていた。"},
+  {"id":"stoker_2","kind":"doll","role":"stoker","sub":2,"title":"炉のすす","cond":"休憩の整備で投炭手を直すと開く","ex":"投炭手の炉のすすを落とした。下から、親方の道具と同じ印が出てきた。","full":"休憩のあいだに、投炭手の炉のすすを落とした。すすの下から、親方の道具に彫ってあるのと同じ印が出てきた。／この炉は、下の「炉の階」にある大きな炉を、そのまま小さくした形をしている。親方は、止めたい相手の炉を手元で試すために、この人形を組んだのだと思う。"},
+  {"id":"stoker_3","kind":"doll","role":"stoker","sub":3,"title":"投炭手の設計図（残る）","cond":"？","hide":true,"ex":"投炭手が壊れた。「溢れさせろ」の書き込みの下に、小さな字で「自分は溢れるな」とあった。","full":"投炭手が壊れた。最後まで、相手の炉に燃料を入れ続けていた。／図面の「溢れさせろ」の下に、小さな字で「自分は溢れるな」と書いてあった。壊れるまで、私はこの一行に気づかなかった。次に組むときは、この一行から読む。"},
+  {"id":"e_A","kind":"enemy","enemy":"A","title":"見回りの機械","cond":"装甲機兵を倒すと開く","ex":"機兵の胴に名札があった。「管の階・見回り・一番」。もとは、管を見回る機械だ。","full":"装甲機兵を止めた。胴の名札には「管の階・見回り・一番」とある。もとは、機関区の管を見回る機械だ。機関区とは、街の地下で、大きな蒸気の機械を動かしている持ち場のことだ。／胴の安全弁は、閉められていた。圧を上げろと言われたとき、親方は見回りの機械から先に閉めた。だから機兵は、圧が溜まりやすく、逃がせない。"},
+  {"id":"e_B","kind":"enemy","enemy":"B","title":"放圧の機械","cond":"放圧蟲を倒すと開く","ex":"蟲の背中の安全弁は、まだ開く。機関区で、今も自分で蒸気を逃がす機械はこれだけだ。","full":"放圧蟲を止めた。背中の安全弁は、まだ開く。圧が60になると開いて、蒸気を逃がす。放圧、つまり、たまった蒸気を逃がすことを、今も自分でしている機械はこれだけだ。／こちらに蒸気を浴びせてくるのは、出口の向きがずれているからだ。親方がなぜこの一台だけ閉めなかったのかは、どこにも書いていない。"},
+  {"id":"e_C","kind":"enemy","enemy":"C","title":"歯車の検査機","cond":"歯車蟲を倒すと開く","ex":"甲羅の歯車は、部品のかみ合わせを確かめる道具だ。反撃してくるのは、その癖が残っているからだ。","full":"歯車蟲を止めた。甲羅の歯車は、部品のかみ合わせを確かめる道具だ。触れたものを、何でも確かめようとする。反撃してくるのは、その癖が残っているからだ。／この機械は炉を持たないので、圧が上がっても暴発しにくい。名札の番号を見ると、親方が一番初めに組んだ機械だと分かる。"},
+  {"id":"e_A2","kind":"enemy","enemy":"A2","free":true,"title":"改修の記録","cond":"装甲機兵・改を倒すと開く","ex":"機兵改の装甲の内側に、親方の書き込みが三つあった。書き込むたびに、安全弁が閉まっていく。","full":"管の階の一番奥で、機兵改を止めた。装甲の内側に、親方の書き込みが三つある。一つ目は「上の街の頼み。圧を上げる。安全弁は開けておく」。二つ目は「もっと上げる。安全弁を閉める」。三つ目は、日付だけだった。／親方は、圧を上げるたびに一行ずつ書いた。三つ目のときは、もう書くことが無かったのだと思う。"},
+  {"id":"e_D","kind":"enemy","enemy":"D","title":"炉の掃除機","cond":"蒸気砲台を倒すと開く","ex":"砲台の砲身は、もとは炉のすすを吹き飛ばす管だ。今は、炉に背を向けて据えてある。","full":"蒸気砲台を止めた。砲身は、もとは炉のすすを吹き飛ばす管だ。炉に向けて置くものなので、重く作ってある。／今は、炉に背を向けて据えてある。誰かが、向きを変えたのだ。台に彫ってあった印は、削り取られていた。"},
+  {"id":"e_E","kind":"enemy","enemy":"E","title":"排気の走り手","cond":"排気狼を倒すと開く","ex":"狼は、蒸気の出口を走り回って詰まりを取る機械だ。弱った者を狙うのは、弱い流れを探す癖だ。","full":"排気狼を止めた。蒸気の出口を走り回って、詰まりを取る機械だ。弱った者を狙うのは、流れの弱い所を探す癖が残っているからだ。／圧が50になると自分で蒸気を逃がして持ち直すのは、出口の風で冷えるからだ。壊れているのではない。仕事の相手を、間違えているだけだ。"},
+  {"id":"e_F","kind":"enemy","enemy":"F","title":"吸気の機械","cond":"吸気機兵を倒すと開く","ex":"吸気機兵は、管から圧を吸い上げて炉に戻す機械だ。私の背中の機関を、管だと思っている。","full":"吸気機兵を止めた。管から圧を吸い上げて、炉に戻す機械だ。こちらの圧を吸うのは、私の背中の小さな機関を、管だと思っているからだ。機関士ばかり狙うのも、圧の出どころを探しているからだ。／親方の書き込みに「吸気は最後まで残せ。止めるときに使う」とある。まだ残っている。"},
+  {"id":"e_D2","kind":"enemy","enemy":"D2","free":true,"title":"改修の砲台","cond":"蒸気砲台・改を倒すと開く","ex":"砲台改の砲身は、太く作り直してある。上の街へ送る蒸気を増やすための直しだと、書き込みにある。","full":"蒸気砲台・改を止めた。砲身は、太く作り直してある。親方の書き込みには「上の街へ送る蒸気を増やす。管を太くする」とある。／すすを吹き飛ばす管を太くすれば、蒸気を一度にたくさん押し出せる。圧を上げろという頼みに、親方は機械を作り変えて応えていた。"},
+  {"id":"e_G","kind":"enemy","enemy":"G","free":true,"title":"止まらない機関","cond":"過圧機関を倒すと開く","ex":"過圧機関には、安全弁が最初から付いていない。この機械を組んだのは、親方だ。","full":"過圧機関を止めた。圧が上がりすぎたまま動き続ける、機関区で一番大きな機械だ。止まるのは今日の分だけで、明日にはまた動き出す。／この機械には、安全弁が最初から付いていない。安全弁とは、圧が上がりすぎたときに蒸気を逃がす栓のことだ。／上の街は、もっと蒸気を欲しがった。親方は言われるたびに圧を上げ、安全弁を少しずつ閉めていった。最後に「止めるな」と言われて、止まらない機械を組んだ。それが、この過圧機関だ。親方がそのあとどうしたのかは、ここには書いていない。"},
+  {"id":"scrap_1","kind":"scrap","free":true,"title":"切れ端・一","cond":"出来事「図面の切れ端」で拾うと開く","ex":"人形の図面の元になった紙だ。端に「見回りの機械・共通」とある。人形と敵は、同じ紙から描かれている。","full":"足場のすき間に、紙が挟まっていた。人形の図面の元になった紙で、端に「見回りの機械・共通」とある。人形と敵は、同じ紙から描かれていたのだ。／違いは、一つだけだ。私が組んだ人形は、安全弁が開く。暴れている機械は、安全弁が閉まっている。"},
+  {"id":"scrap_2","kind":"scrap","free":true,"title":"切れ端・二","cond":"出来事「図面の切れ端」で拾うと開く","ex":"上の街が頼んできた蒸気の量が、三回書き換えてある。増えるたびに「安全弁」と書いて消してある。","full":"親方の計算の跡だ。上の街が頼んできた蒸気の量が、三回書き換えてある。量が増えるたびに、下に「安全弁」と書いて、線で消してある。／消した線は、三本とも一度で引いてある。迷った跡は無い。親方は、一度決めたことを書き直さない人だった。"},
+  {"id":"scrap_3","kind":"scrap","free":true,"title":"切れ端・三","cond":"出来事「図面の切れ端」で拾うと開く","ex":"親方の字で、一行だけ書いてある。「自分の手を離れても回る形にしろ。私にはできなかった」。","full":"親方の字で、一行だけ書いてある。「自分の手を離れても回る形にしろ。私にはできなかった」。／人形の図面は、この一行のあとに描かれている。紙の番号の順で分かる。親方は、人がいなくても蒸気を逃がせる形を、人形で作ろうとしていた。"},
+  {"id":"last","kind":"last","free":true,"title":"最後の記録","cond":"？","hide":true,"need":["e_G","scrap_1","scrap_2","scrap_3"],"ex":"三枚の切れ端が、そろった。親方は、自分の手で圧を逃がし続けるために、一番奥へ降りたのだ。","full":"三枚の切れ端が、そろった。親方は最後に、「圧は、自分の手で逃がし続ける」と書き残した。そして、機関区の一番奥へ降りていった。安全弁の無い機械の代わりに、自分の手で栓を開け続けるつもりだったのだ。親方は、戻らなかった。／人形の図面に安全弁の場所が空けてあったのは、そのためだと分かった。人がいなくても、蒸気を逃がせるようにするためだ。私は人形に安全弁を付けて、毎日ここへ降りている。いつか、人形だけで降りられる形にする。今日の放圧は、これで終わりだ。明日の分は、明日やる。"}
 ];
 /*FRAG-END*/
 const fragOpened = id => !!(META && META.frag && META.frag.opened && META.frag.opened[id]);
 const fragOpenedN = () => (META && META.frag && META.frag.opened) ? Object.keys(META.frag.opened).length : 0;
 const fragScrapLeft = () => FRAG.some(f=>f.kind==='scrap' && !fragOpened(f.id));
-let fragShownAt=0, fragHid0=0, fragNext=null;
+const fragRead = id => !!(META && META.frag && META.frag.read && META.frag.read[id]);   // p9-0.4.0＝部屋で全文を開いた〈移行時は 'pre'〉
+const fragUnread = () => FRAG.filter(f=>fragOpened(f.id) && !fragRead(f.id));
+const fragNoticeText = t => `記録が1本開いた：${t}（部屋の「記録」で読める）`;   // p9-0.4.0＝途中の画面の代わりの1行（10 §6-1）
+const fragNotice = f => f ? `<p class="ok">${fragNoticeText(f.title)}</p>` : '';
 // 条件が「いま」満たされた断片〈まだ開いていないもの〉。kind＝win〈戦闘に勝った後〉／rest〈休憩の整備の後〉／end〈ランの終わり〉。ctx＝enemies〈倒した敵〉・broke〈この戦闘で壊れた人形〉・repaired〈整備で直した人形〉
 function fragCandidates(kind, ctx){
   ctx = ctx || {}; const out = [];
@@ -660,31 +666,48 @@ function fragCandidates(kind, ctx){
       else if (f.sub===3){ if ((kind==='win'||kind==='end') && (ctx.broke||[]).includes(f.role)) out.push(f); }
     }
     else if (f.kind==='enemy'){ if (kind==='win' && (ctx.enemies||[]).includes(f.enemy)) out.push(f); }
-    else if (f.kind==='last'){ if (kind==='end' && FRAG.every(g=>g.id===f.id || fragOpened(g.id))) out.push(f); }
+    else if (f.kind==='last'){ if (kind==='end' && (f.need || FRAG.filter(g=>g.id!==f.id).map(g=>g.id)).every(fragOpened)) out.push(f); }   // p9-0.4.0＝need＝謎に関わる4本〈止まらない機関＋切れ端3本〉（10 §6-0 問2 a）
   });
   return out;
 }
-// 1つの場面で開くのは1本〈配列の順＝人形→敵〉。数えるものは1ランに TUNE.frag.perRun 本まで
-function fragCheckpoint(kind, ctx, next){
+// 1つの場面で開くのは1本〈配列の順＝人形→敵〉。数えるものは1ランに TUNE.frag.perRun 本まで。p9-0.4.0＝画面は出さない＝開いた記録を返す〈知らせの1行は、呼んだ側の画面に出す＝10 §6-1〉
+function fragTake(kind, ctx){
   const cands = fragCandidates(kind, ctx).filter(f => f.free || (RUN.fragN||0) < TUNE.frag.perRun);
-  if (!cands.length){ next(); return; }
-  openFrag(cands[0], next, ctx && ctx.node);
+  if (!cands.length) return null;
+  return openFrag(cands[0], ctx && ctx.node);
 }
-function openFrag(f, next, node){   // node＝場面の名前〈フロアのボスの後は floor が進んでいるので、戦闘後に取った名前を使う〉
-  META.frag = META.frag || {opened:{}, views:0}; META.frag.opened[f.id] = RUN.no || (META.runs+1);
+function openFrag(f, node){   // node＝場面の名前〈フロアのボスの後は floor が進んでいるので、戦闘後に取った名前を使う〉
+  META.frag = META.frag || {opened:{}, views:0, read:{}, readLog:[]}; META.frag.opened[f.id] = RUN.no || (META.runs+1);
   if (!f.free) RUN.fragN = (RUN.fragN||0) + 1;
   saveMeta(); if (!RUN.done) saveRun();
-  REC.frags = REC.frags || []; const rec = { node: node || `${RUN.floor}-${RUN.li+1}`, id:f.id, title:f.title, ms:0, chars:f.ex.length }; REC.frags.push(rec);
-  $('fg-title').textContent = `記録が開いた＝${f.title}`;
-  $('fg-body').innerHTML = `<p>${f.ex}</p><p class="dim">全文は部屋の「記録」で読める（${fragOpenedN()}／${FRAG.length}）</p>`;
-  show('s-frag'); scrEnter('other'); fragShownAt = performance.now(); fragHid0 = hidMs;
-  fragNext = () => { rec.ms = Math.max(0, Math.round(performance.now() - fragShownAt - (hidMs - fragHid0))); if (!RUN.done) saveRun(); next(); };
+  REC.frags = REC.frags || []; REC.frags.push({ node: node || `${RUN.floor}-${RUN.li+1}`, id:f.id, title:f.title });
+  return f;
+}
+function recHead(){   // p9-0.4.0＝見出しの数と部屋の上の段の「未読」
+  const u = fragUnread().length;
+  $('rec-count').textContent = `${fragOpenedN()}／${FRAG.length}${u ? `・未読 ${u}` : ''}`;
+  $('m-unread').style.display = u ? '' : 'none'; $('m-unread-n').textContent = u;
 }
 function renderRec(){
-  $('rec-count').textContent = `${fragOpenedN()}／${FRAG.length}`;
-  $('rec-list').innerHTML = FRAG.map(f => fragOpened(f.id) ? `<div class="ext"><div><b>${f.title}</b><small>${f.full}</small></div></div>` : `<div class="ext"><div class="dim">――<small>${f.hide ? '？' : f.cond}</small></div></div>`).join('');
+  $('rec-list').innerHTML = FRAG.map(f => fragOpened(f.id) ? `<details class="rec" data-id="${f.id}"><summary><b>${f.title}</b>${fragRead(f.id) ? '' : '<span class="unread">未読</span>'}</summary><p class="rec-full">${f.full}</p></details>` : `<div class="ext"><div class="dim">――<small>${f.hide ? '？' : f.cond}</small></div></div>`).join('');
+  document.querySelectorAll('#rec-list details.rec').forEach(d => d.addEventListener('toggle', () => { if (d.open) fragMarkRead(d.dataset.id, d); }));
+  recHead();
 }
-const fragLine = () => { const fs = REC.frags||[], ms = fs.map(f=>f.ms).filter(v=>v>0); const med = ms.length ? ms.slice().sort((a,b)=>a-b)[Math.floor(ms.length/2)] : 0, avg = ms.length ? ms.reduce((a,b)=>a+b,0)/ms.length : 0; const sc = REC.choices.filter(c=>c.ev==='scrap'); return `このラン ${fs.length}本${fs.length?'〈'+fs.map(f=>`${f.node}:${f.title} ${(f.ms/1000).toFixed(1)}s`).join(' ')+'〉':''} / 累計 ${fragOpenedN()}/${FRAG.length} / 読んだ秒 中央値${(med/1000).toFixed(1)}s 平均${(avg/1000).toFixed(1)}s / 記録を開いた 累計${(META.frag&&META.frag.views)||0}回 / 切れ端 拾う${sc.filter(c=>c.pick==='拾う').length}・置いていく${sc.filter(c=>c.pick==='置いていく').length}`; };
+function fragMarkRead(id, d){   // p9-0.4.0＝題をタップして全文を開いた＝読んだ〈after＝その時点で終わっているランの数〉
+  if (fragRead(id)) return;
+  META.frag.read = META.frag.read || {}; META.frag.readLog = META.frag.readLog || [];
+  META.frag.read[id] = META.runs + 1; META.frag.readLog.push({ id, after: META.runs });
+  saveMeta();
+  const b = d && d.querySelector('.unread'); if (b) b.remove();
+  recHead();
+}
+const FT = id => { const f = FRAG.find(g=>g.id===id); return f ? f.title : id; };
+function recCopyText(){   // p9-0.4.0＝部屋で読んだ分をサイファへ渡す（3ランの後に読んだ分＝10 §6-1）
+  const fr = (META.frag && META.frag.readLog) || [], u = fragUnread(), by = {};
+  fr.forEach(r => { (by[r.after] = by[r.after] || []).push(FT(r.id)); });
+  return `[OVERPRESSURE 部屋の記録] ${VER} ${new Date().toLocaleString('ja-JP')}\n[記録] 開いた ${fragOpenedN()}/${FRAG.length} / 未読 ${u.length}${u.length ? '〈'+u.map(f=>f.title).join('・')+'〉' : ''} / 部屋で読んだ 累計 ${fr.length}本${fr.length ? '〈'+Object.keys(by).map(k=>`${k}ラン目の後:${by[k].join('・')}`).join(' ')+'〉' : ''} / 記録を開いた 累計 ${(META.frag && META.frag.views)||0}回 / 最後の記録 ${fragOpened('last') ? '開いた' : 'まだ'} / 遠征 ${META.runs}回`;
+}
+const fragLine = () => { const fs = REC.frags||[], fr = (META.frag&&META.frag.readLog)||[], rb = RUN ? fr.filter(r=>r.after===RUN.no-1) : [], u = fragUnread(), sc = REC.choices.filter(c=>c.ev==='scrap'); return `このラン ${fs.length}本${fs.length?'〈'+fs.map(f=>`${f.node}:${f.title}`).join(' ')+'〉':''} / 累計 ${fragOpenedN()}/${FRAG.length} / 未読 ${u.length} / 部屋で読んだ 前のランの後から ${rb.length}本${rb.length?'〈'+rb.map(r=>FT(r.id)).join('・')+'〉':''}・累計 ${fr.length}本 / 記録を開いた 累計${(META.frag&&META.frag.views)||0}回 / 切れ端 拾う${sc.filter(c=>c.pick==='拾う').length}・置いていく${sc.filter(c=>c.pick==='置いていく').length} / 最後の記録 ${fragOpened('last')?'開いた':'まだ'}`; };   // p9-0.4.0＝読んだ秒をやめ、部屋で読んだ数へ（10 §6-1）
 // ===== 部屋 =====
 function renderRoom(){
   const inRun = !!RUN && !RUN.done;
@@ -747,6 +770,7 @@ function showMap(){
   $('mp-pp').textContent = `${RUN.pp}/${OVF()}`; $('mp-g').textContent = RUN.gold; $('mp-m').textContent = RUN.mat;
   const bon = RUN.items.length ? `・宝＝${RUN.items.map(id=>ITEM(id).short).join(' ')}` : '';
   $('mp-hint').textContent = `フロア ${RUN.floor}／${TUNE.floors}＝光るノードを選ぶ（上がボス${RUN.floor<TUNE.floors?'＝倒すと次のフロアへ':'＝最後'}）${bon}`;
+  const mf = $('mp-frag'); if (RUN.fragNote){ mf.textContent = fragNoticeText(RUN.fragNote); mf.style.display = ''; delete RUN.fragNote; } else mf.style.display = 'none';   // p9-0.4.0
   renderMap(); mapShownAt = performance.now();
 }
 function renderMap(){
@@ -817,7 +841,7 @@ function evPick(which){
   const n = cur(), ev = TUNE.events[n.ev||'steam'];
   REC.choices.push({ node:`${RUN.floor}-${RUN.li+1}`, kind:'event', ev:n.ev||'steam', pick: which==='a'?ev.a.label:ev.b.label, ms:Math.round(performance.now()-choiceShownAt) });
   if (n.ev==='scrap'){   // 拾う＝切れ端の記録を順に1本〈上限に数えない〉／置いていく＝素材
-    if (which==='a'){ const f = FRAG.find(g=>g.kind==='scrap' && !fragOpened(g.id)); nodeFinish(); if (f){ openFrag(f, showMap); return; } RUN.mat += 1; showMap(); return; }
+    if (which==='a'){ const f = FRAG.find(g=>g.kind==='scrap' && !fragOpened(g.id)); nodeFinish(); if (f){ openFrag(f); RUN.fragNote = f.title; } else RUN.mat += 1; showMap(); return; }   // p9-0.4.0＝画面を出さず、次の地図の上に1行
     RUN.mat += ev.b.mat; nodeDone(); return;
   }
   if (which==='a'){ RUN.gold += ev.a.gold; RUN.hero = Math.max(1, RUN.hero + ev.a.hp); }
@@ -835,7 +859,7 @@ function rsPick(which){
   if (which==='a'){ repaired = ROLES.filter(r=>{ const m=RUN.party[r]; return m && m.hp>0 && m.hp < DEF(m.type).hp; }); RUN.hero = TUNE.hero.hp; healParty(null); }   // p9-0.1.0＝直した人形〈HPが減っていた〉＝人形の記録2の条件
   else { RUN.ovf += TUNE.rest.overflowUp; }
   REC.choices.push({ node:`${RUN.floor}-${RUN.li+1}`, kind:'rest', pick: which==='a'?'整備':'増圧', ms:Math.round(performance.now()-choiceShownAt) });
-  if (which==='a'){ nodeFinish(); fragCheckpoint('rest', {repaired}, showMap); return; }
+  if (which==='a'){ nodeFinish(); const f = fragTake('rest', {repaired}); if (f) RUN.fragNote = f.title; showMap(); return; }   // p9-0.4.0＝次の地図の上に1行
   nodeDone();
 }
 // ===== 戦闘（p4＝Phase 2′）=====
@@ -1178,18 +1202,20 @@ function afterBattle(win){
   if (n.type==='boss'){
     n.done=true; RUN.pending=false; RUN.gold += TUNE.bossReward.gold; RUN.mat += TUNE.bossReward.mat;
     flushScr(); REC.floors.push({ floor:RUN.floor, sec:Math.round((REC.t.map+REC.t.battle+REC.t.other)/1000), battles:REC.battles.length, nodes:RUN.li+1 });
-    if (RUN.floor >= TUNE.floors){ fragCheckpoint('win', RUN.fragCtx, ()=>endRun(true)); return; }   // p9-0.1.0＝最後のボスの記録は結果の前に
+    if (RUN.floor >= TUNE.floors){ fragTake('win', RUN.fragCtx); endRun(true); return; }   // p9-0.4.0＝最後のボスの記録は結果の画面に並ぶ
+    const nf = fragTake('win', RUN.fragCtx);   // p9-0.4.0＝フロアの画面に1行
     const h = TUNE.restHealBattle; RUN.hero = Math.min(TUNE.hero.hp, RUN.hero + h); if (TUNE.dollsHealAfterBattle) healParty(h);
     const doneFloor = RUN.floor; RUN.floor++; RUN.map = genMap(floorSeed(RUN.seed, RUN.floor), RUN.floor); RUN.li=-1; RUN.ii=-1; saveRun();
     $('fl-title').textContent = `フロア${doneFloor}のボス ${groupName()} を倒した`;
-    $('fl-body').innerHTML = `<p>金 +${TUNE.bossReward.gold}（このラン ${RUN.gold}）・素材 +${TUNE.bossReward.mat}（このラン ${RUN.mat}）</p>${gotMsg}<p>小休止＝機関士 HP+${h}。圧は ${RUN.pp}。</p>${dollNote()}<p>次＝<b>フロア${RUN.floor}／${TUNE.floors}</b>（新しい地図・<b>別の敵</b>・${RUN.floor>=TUNE.floors?'最後のボス':'その先にもう1つ'}）</p>`;
+    $('fl-body').innerHTML = `<p>金 +${TUNE.bossReward.gold}（このラン ${RUN.gold}）・素材 +${TUNE.bossReward.mat}（このラン ${RUN.mat}）</p>${gotMsg}<p>小休止＝機関士 HP+${h}。圧は ${RUN.pp}。</p>${dollNote()}<p>次＝<b>フロア${RUN.floor}／${TUNE.floors}</b>（新しい地図・<b>別の敵</b>・${RUN.floor>=TUNE.floors?'最後のボス':'その先にもう1つ'}）</p>${fragNotice(nf)}`;
     show('s-floor'); scrEnter('other'); return;
   }
   const r = TUNE.reward[n.type], h = TUNE.restHealBattle;
   RUN.gold += r.gold; RUN.mat += r.mat;
   RUN.hero = Math.min(TUNE.hero.hp, RUN.hero + h); if (TUNE.dollsHealAfterBattle) healParty(h);
+  const nf = fragTake('win', RUN.fragCtx);   // p9-0.4.0＝報酬の画面に1行（10 §6-1）
   $('rw-title').textContent = `${groupName()} を倒した`;
-  $('rw-body').innerHTML = `<p>金 +${r.gold}（このラン ${RUN.gold}）・素材 +${r.mat}（このラン ${RUN.mat}）</p>${gotMsg}<p>小休止＝機関士 HP+${h}。圧は ${RUN.pp}。</p>${dollNote()}${aliveParty().length===0 && ROLES.some(x=>RUN.party[x]) ? '<p class="warn">人形は壊れている（設計図は残る）。</p>':''}`;
+  $('rw-body').innerHTML = `<p>金 +${r.gold}（このラン ${RUN.gold}）・素材 +${r.mat}（このラン ${RUN.mat}）</p>${gotMsg}<p>小休止＝機関士 HP+${h}。圧は ${RUN.pp}。</p>${dollNote()}${aliveParty().length===0 && ROLES.some(x=>RUN.party[x]) ? '<p class="warn">人形は壊れている（設計図は残る）。</p>':''}${fragNotice(nf)}`;
   show('s-reward'); scrEnter('other');
 }
 function endRun(win, cause){
@@ -1202,7 +1228,7 @@ function endRun(win, cause){
   META.runs++;
   REC.take = { win, gold: win?RUN.gold:0, goldLost: win?0:RUN.gold, mat:RUN.mat, party: ROLES.map(r => RUN.party[r] ? { role:r, type:RUN.party[r].type, hp:RUN.party[r].hp, brokeAt:RUN.party[r].brokeAt, alive: win && RUN.party[r].hp>0 } : null), hadAuto: ROLES.some(r=>RUN.party[r]), nodes:RUN.path.length, floor:RUN.floor, path:RUN.path.slice(), result:RUN.result, resumed:RUN.resumed||0, items:RUN.items.slice(), bpFound:RUN.bpFound.slice() };
   saveMeta(); try{ localStorage.removeItem(KEY_RUN); }catch(e){}
-  fragCheckpoint('end', RUN.fragCtx||{}, showResult);   // p9-0.1.0＝ランの終わり＝壊れた人形の記録・最後の記録
+  fragTake('end', RUN.fragCtx||{}); showResult();   // p9-0.1.0＝ランの終わり＝壊れた人形の記録・最後の記録。p9-0.4.0＝結果の画面に並ぶ
 }
 // ===== 結果 =====
 function summarize(){
@@ -1236,6 +1262,7 @@ function showResult(){
   let h = `<p><b>${tk.result}</b>　フロア ${tk.floor}／${TUNE.floors}・ノード ${tk.nodes}／${RUN.map.length*TUNE.floors}　所要 ${Math.round(s.total/1000)} 秒（マップ ${Math.round(REC.t.map/1000)}・戦闘 ${Math.round(REC.t.battle/1000)}・その他 ${Math.round(REC.t.other/1000)}）</p>`;
   h += `<p>持ち帰り＝${tk.win?`金 +${tk.gold}`:`金 0（失った ${tk.goldLost}）`}・素材 +${tk.mat}${tk.bpFound.length?`・設計図 ${tk.bpFound.map(id=>DEF(id).name).join('・')}`:''}　→ 部屋＝金 ${META.gold}・素材 ${META.mat}・武器 段階${META.weapon}</p>`;
   h += `<p>人形＝${!tk.hadAuto?'なし（連れていない）':tk.party.filter(Boolean).map(m=>`${ROLE(m.role).name}〈${DEF(m.type).name}〉＝`+(m.brokeAt?`壊れた（ノード${m.brokeAt}）`:m.alive?'生存':'壊れた')).join('・')}（設計図は残る）　宝＝${tk.items.length?tk.items.map(id=>ITEM(id).short).join('・'):'なし'}</p>`;
+  const fsr = REC.frags||[]; if (fsr.length) h += `<p class="ok">このランで開いた記録＝${fsr.map(f=>f.title).join('・')}（部屋の「記録」で読める）</p>`;   // p9-0.4.0
   h += `<p>役の技＝${roleLine()}</p><p>敵の狙い＝${hitsLine()}</p>`;
   h += `<table><tr><th>敵</th><th>戦</th><th>平均T</th><th>暴発比</th><th>過熱/戦</th><th>被害/戦</th></tr>`;
   s.enemies.forEach(e=>{ h += `<tr><td>${e.id} ${eName(e.id)}</td><td>${e.win}/${e.n}</td><td>${e.avgT}</td><td>${e.burstRate}%</td><td>${e.heatPer}</td><td>${e.takenPer}</td></tr>`; });
@@ -1249,7 +1276,7 @@ function showResult(){
 }
 function buildOut(){
   const s = summarize(), tk = REC.take, L = [];
-  L.push(`[OVERPRESSURE 放圧を分けない] ${VER} ${new Date().toLocaleString('ja-JP')}`);
+  L.push(`[OVERPRESSURE 断片 まとめ読み] ${VER} ${new Date().toLocaleString('ja-JP')}`);
   L.push(`[環境] ${window.navigator.standalone?'ホーム画面':'ブラウザ'} / 窓 ${innerWidth}x${innerHeight} / dpr ${devicePixelRatio} / ${location.protocol} / 画像 ${imgStatus()} 倍率${sprScale.toFixed(2)}`);
   L.push(`[ラン] ${tk.result} / 所要 ${Math.round(s.total/1000)}秒（マップ${Math.round(REC.t.map/1000)} 戦闘${Math.round(REC.t.battle/1000)} 他${Math.round(REC.t.other/1000)}）/ フロア ${tk.floor}/${TUNE.floors} / ノード ${tk.nodes}/${RUN.map.length*TUNE.floors} / 戦闘 ${REC.battles.length} / 再開 ${tk.resumed}回 / 種 ${RUN.seed}`);
   if (REC.floors.length) L.push(`[フロア] ` + REC.floors.map(f=>`F${f.floor}:${f.sec}秒まで(戦闘${f.battles})`).join(' '));
@@ -1277,10 +1304,13 @@ function buildOut(){
 $('b-sortie').addEventListener('click', ()=>{ if (RUN && !RUN.done){ if (RUN.pending) resolveNode(cur()); else showMap(); } else newRun(); });
 $('b-wpn').addEventListener('click', ()=>{ if (RUN&&!RUN.done) return; const c=TUNE.room.weapon.costs[META.weapon]; if (c==null || META.gold<c) return; META.gold -= c; META.weapon++; saveMeta(); renderRoom(); });
 $('b-map-room').addEventListener('click', ()=>{ saveRun(); renderRoom(); });
-$('b-rw').addEventListener('click', ()=>{ nodeFinish(); fragCheckpoint('win', RUN.fragCtx||{}, showMap); });   // p9-0.1.0＝報酬の後に断片の場面
+$('b-rw').addEventListener('click', nodeDone);   // p9-0.4.0＝記録は報酬の画面を出す時に開いている
 $('e-box').addEventListener('click', ev => { const c = ev.target.closest('.ecol'); if (c) setTarget(+c.dataset.i); });   // p8-0.2.0＝上の枠の列をタップ＝その敵を狙う〈旧＝枠のどこでも次の敵へ送る〉
-$('b-fl').addEventListener('click', ()=>fragCheckpoint('win', RUN.fragCtx||{}, showMap));   // p9-0.1.0
-$('b-fg').addEventListener('click', ()=>{ const f=fragNext; fragNext=null; if (f) f(); });
+$('b-fl').addEventListener('click', showMap);   // p9-0.4.0
+$('m-unread').addEventListener('click', ()=>{ const d=$('rec-details'); d.open=true; d.scrollIntoView({block:'start', behavior:'smooth'}); });   // p9-0.4.0＝上の段の「未読」から記録の欄へ
+$('b-rec-copy').addEventListener('click', ()=>{ const t=recCopyText(), b=$('b-rec-copy'), o=$('rec-out'); o.value=t;
+  const manual = ()=>{ o.style.display=''; o.focus(); o.select(); b.textContent='選択→手動コピー'; };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(()=>{ b.textContent='コピーしました'; }).catch(manual); else manual(); });
 $('rec-details').addEventListener('toggle', ()=>{ if ($('rec-details').open){ META.frag = META.frag||{opened:{}, views:0}; META.frag.views = (META.frag.views||0)+1; saveMeta(); } });   // p9-0.1.0＝部屋の記録を開いた回数（10 §2 #2）
 $('b-tr').addEventListener('click', nodeDone);
 $('b-ev-a').addEventListener('click', ()=>evPick('a'));
@@ -1301,7 +1331,7 @@ let resetArmed=false;
 $('b-reset').addEventListener('click', ()=>{ if (!resetArmed){ resetArmed=true; $('b-reset').textContent='本当に初期化する？（もう1回押す）'; setTimeout(()=>{ resetArmed=false; $('b-reset').textContent='すべて初期化（部屋・遠征）'; }, 4000); return; } META=newMeta(); RUN=null; REC=null; saveMeta(); saveRun(); resetArmed=false; $('b-reset').textContent='すべて初期化（部屋・遠征）'; $('save-msg').textContent='初期化しました'; renderRoom(); });
 $('ver').textContent = VER;
 preloadImages(); loadAll(); renderRoom();
-window.OP = { floorSeed, project, FRAG, fragCandidates, fragCheckpoint, openFrag, fragOpened, renderRec, fragLine, nodeFinish, get S(){return S;}, get RUN(){return RUN;}, get META(){return META;}, get REC(){return REC;}, TUNE, ROLES, act, togglePlan, newRun, pickNode, reachable, genMap, nodeDone, evPick, rsPick, startBattle, renderRoom, showMap, loadAll, summarize, buildOut, resolveNode, cur, makeAuto, scrapAuto, openExt, buyBlueprint, migrateMeta, hasCmd, aliveParty, setTarget, cycleTarget, fightComps, enemyActAll, groupN };
+window.OP = { floorSeed, project, FRAG, fragCandidates, fragTake, openFrag, fragOpened, fragRead, fragUnread, fragMarkRead, recCopyText, renderRec, fragLine, nodeFinish, get S(){return S;}, get RUN(){return RUN;}, get META(){return META;}, get REC(){return REC;}, TUNE, ROLES, act, togglePlan, newRun, pickNode, reachable, genMap, nodeDone, evPick, rsPick, startBattle, renderRoom, showMap, loadAll, summarize, buildOut, resolveNode, cur, makeAuto, scrapAuto, openExt, buyBlueprint, migrateMeta, hasCmd, aliveParty, setTarget, cycleTarget, fightComps, enemyActAll, groupN };
 </script>
 </body>
 </html>
