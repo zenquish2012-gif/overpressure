@@ -159,7 +159,7 @@
 <!-- ===== 自分の部屋 ===== -->
 <section class="scr on" id="s-room">
   <div class="row" style="justify-content:space-between;align-items:baseline"><h1>OVERPRESSURE</h1><span class="ver" id="ver"></span></div>
-  <p class="dim">Phase 2′ 戦闘の骨＝4名・コマンド化・圧のマネジメント（数値は仮置き）</p>
+  <p class="dim">Phase 4 断片＝機関区の記録が開く（数値は仮置き）</p>
   <div class="scrollp">
     <div class="box">
       <h2>自分の部屋</h2>
@@ -173,6 +173,12 @@
       <div class="ext"><div>強化台<small id="x-wpn-note"></small></div><button id="b-wpn">強化</button></div>
       <div id="ext-list"></div>
     </div>
+    <div class="box">   <!-- p9-0.1.0＝断片の全文はここ（10 §1-1・問2 a）。開いた回数を数える -->
+      <details id="rec-details"><summary>記録 <b id="rec-count"></b></summary>
+        <p class="dim">機関区で開いた記録。開いた場面では抜きだけ、ここで全文。未回収は「――」。</p>
+        <div id="rec-list"></div>
+      </details>
+    </div>
     <div class="box">
       <h2>ルール</h2>
       <p>マップの<b>光っているノード</b>を選んで進む。先は全部見える（敵の種類・<b>敵の開幕の圧</b>・宝の中身）。<b>同じ層に並ぶ戦闘は敵の種類が違う</b>。9個目がボス。<b>ボスを倒すと次のフロア（新しい地図・別の敵）へ。2フロアで1ラン。</b></p>
@@ -184,6 +190,7 @@
       <p><b>傷は次の戦闘に残る</b>＝戦闘のあと、機関士はHP+20回復する。<b>人形は機械なので勝手には直らない</b>（直すのは休憩の「整備」・注油手の「整備」・宝の「応急油」だけ）。壊れた人形は、そのランでは戻らない。</p>
       <p><b>勝てば</b>金と素材と生き残った人形を持ち帰る。<b>機関士が倒れると</b>そのランの金を失い、素材と拾った設計図だけ持ち帰る。人形は3体とも壊れるが<b>設計図は残る</b>。</p>
       <p>ノードに着くたび自動保存。閉じても「続きから」でマップに戻る（戦闘の途中は保存しない）。</p>
+      <p><b>記録の断片</b>＝人形を連れて勝つ・敵を倒す・休憩の「整備」で人形を直す・出来事「図面の切れ端」で拾う、と機関区の記録が開く（<b>1ランに3本まで</b>。強敵・ボス・切れ端は数えない）。開いた場面では抜きだけ。<b>全文は部屋の「記録」</b>で読める。</p>
       <p class="dim">ランが終わると結果画面が出るので「コピー」してサイファへ。</p>
     </div>
     <div class="box">
@@ -270,6 +277,13 @@
   <button class="big" id="b-rs-b"></button>
 </section>
 
+<!-- ===== 断片（p9-0.1.0）===== -->
+<section class="scr" id="s-frag">
+  <h2 id="fg-title"></h2>
+  <div class="box" id="fg-body"></div>
+  <button class="big" id="b-fg">閉じる</button>
+</section>
+
 <!-- ===== 結果 ===== -->
 <section class="scr" id="s-result">
   <h2 id="r-title">結果</h2>
@@ -296,6 +310,8 @@
       <div class="row"><button data-q="q9" data-v="はい">はい</button><button data-q="q9" data-v="半々">半々</button><button data-q="q9" data-v="いいえ">いいえ</button></div>
       <p><b>Q10 敵のHPと圧を、タップせずに見比べられましたか</b></p>
       <div class="row"><button data-q="q10" data-v="はい">はい</button><button data-q="q10" data-v="半々">半々</button><button data-q="q10" data-v="いいえ">いいえ</button></div>
+      <p><b>Q11 記録の断片の続きが読みたいですか</b></p>
+      <div class="row"><button data-q="q11" data-v="はい">はい</button><button data-q="q11" data-v="どちらとも">どちらとも</button><button data-q="q11" data-v="いいえ">いいえ</button></div>
     </div>
     <div class="box">
       <button id="b-copy">結果をコピー</button>
@@ -307,7 +323,7 @@
 </div>
 <script>
 'use strict';
-const VER = 'p8-0.6.0';
+const VER = 'p9-0.1.0';
 // ===== 調整値（すべて仮置き＝実機の感触で動かす）=====
 const TUNE = {
   hero:{hp:100, name:'機関士', en:'ENGINEER', kana:'きかんし'}, overflow:100,   // p4-0.2.0＝役の正式名称（マスター決定 2026-09-20＝機関区の持ち場の言葉・英語は VENT と同じ大文字）
@@ -365,7 +381,12 @@ const TUNE = {
     {id:'boiler',   name:'予備ボイラー', short:'開幕+20', desc:'このラン、各戦闘の開幕の圧の下限 +20（30→50）', start:20},
   ],
   rest:{ overflowUp:10 },
-  event:{ name:'蒸気だまり', text:'配管の裂け目から蒸気が噴いている。', a:{label:'蒸気を汲む', gold:15, hp:-10}, b:{label:'一息つく', heal:15} },
+  events:{   // p9-0.1.0＝出来事2種（10 §1-1・問4 a）。steam＝従来の「蒸気だまり」／scrap＝「図面の切れ端」＝断片の入口〈拾う＝記録が1本開く・置いていく＝素材〉。scrapRate＝切れ端の残りがあるとき地図に出る割合〈種つき〉
+    steam:{ name:'蒸気だまり', text:'配管の裂け目から蒸気が噴いている。', a:{label:'蒸気を汲む', gold:15, hp:-10}, b:{label:'一息つく', heal:15} },
+    scrap:{ name:'図面の切れ端', text:'足場の隙間に紙が挟まっている。図面の主の手だ。', a:{label:'拾う', note:'記録が1本開く'}, b:{label:'置いていく', mat:2} },
+    scrapRate:0.6,
+  },
+  frag:{ perRun:3 },   // p9-0.1.0＝1ランに開く断片の上限〈数えるものだけ。強敵・ボス・切れ端・最後の記録は数えない〉（10 §1-1）
   blueprint:{ start:['shield','medic','stoker'], eliteDrop:0.5, bossDrop:1.0, shopCost:150, scrapMat:1 },   // 設計図の出方（仮決め）。p4＝3役の設計図を最初から所持（未所持が無い間は拾得・工房の出番なし）
   // --- Phase 3（絵）＝表示だけ。戦闘の数値には触らない ---
   sprite:{ on:true, scale:2.0, eliteScale:1.25, hotAt:70, pickScale:1.5,        // 表示倍率〈1ドット≒2pt・ステージに収まらなければ自動で縮む〉・強敵／ボスは一回り大きく・敵の圧≥70で絵に熱の光
@@ -487,7 +508,7 @@ const partyText = (party, withHp) => { const xs = ROLES.map(r => { const m = par
 const ENEMY = id => TUNE.enemies.find(e=>e.id===id);
 const ITEM = id => TUNE.treasure.find(t=>t.id===id);
 const cur = () => RUN.map[RUN.li][RUN.ii];
-function newMeta(){ return { gold:0, mat:0, weapon:0, party:{tank:'shield', medic:null, stoker:null}, blueprints:TUNE.blueprint.start.slice(), ext:{}, runs:0, wins:0 }; }
+function newMeta(){ return { gold:0, mat:0, weapon:0, party:{tank:'shield', medic:null, stoker:null}, blueprints:TUNE.blueprint.start.slice(), ext:{}, runs:0, wins:0, frag:{opened:{}, views:0} }; }   // p9-0.1.0＝frag＝開いた断片〈id→ラン番号〉と部屋の記録を開いた回数
 function newRec(){ return { ver:VER, t:{map:0,battle:0,other:0}, picks:[], choices:[], battles:[], bt:null, turns:[], burstsP:0, burstsE:0, steam:0, drained:0, countered:0, vents:0, dodged:0, retarget:0, ventMulti:0, items:[], bpFound:[], q:{}, take:null, floors:[], hits:{hero:0, tank:0, medic:0, stoker:0, all:0}, skills:{ tank:{fired:0, absorbed:0, fell:0}, medic:{fired:0, healed:0, fell:0}, stoker:{fired:0, finish:0, fell:0, held:0} }, steamBursts:0, projMiss:0 }; }
 function saveMeta(){ try{ localStorage.setItem(KEY_META, JSON.stringify(META)); }catch(e){} }
 function saveRun(){ try{ if (RUN) localStorage.setItem(KEY_RUN, JSON.stringify(RUN)); else localStorage.removeItem(KEY_RUN); }catch(e){} }
@@ -505,6 +526,7 @@ function migrateMeta(m){   // Phase 1〜3 の記録を引き継ぐ。p4＝枠2�
   ROLES.forEach(r=>{ const id=m.party[r]; if (id && (!DEF(id) || DEF(id).role!==r)) m.party[r]=null; });
   delete m.autoAlive; delete m.autoType;
   if (!m.ext) m.ext = {};
+  if (!m.frag) m.frag = {opened:{}, views:0};   // p9-0.1.0
   return m;
 }
 function loadAll(){
@@ -517,7 +539,8 @@ function loadAll(){
 let curScr=null, curAt=0, mapShownAt=0, choiceShownAt=0;
 function scrEnter(cat){ flushScr(); curScr=cat; curAt=performance.now(); }
 function flushScr(){ if (curScr && REC){ REC.t[curScr] = (REC.t[curScr]||0) + Math.round(performance.now()-curAt); } curAt=performance.now(); }
-document.addEventListener('visibilitychange', ()=>{ if (document.hidden) flushScr(); else curAt=performance.now(); });
+let hidAt=0, hidMs=0;   // p9-0.1.0＝裏に回していた時間の累計〈断片の読んだ秒から除く〉
+document.addEventListener('visibilitychange', ()=>{ if (document.hidden){ flushScr(); hidAt=performance.now(); } else { curAt=performance.now(); if (hidAt){ hidMs += performance.now()-hidAt; hidAt=0; } } });
 // ===== 乱数（種つき＝マップは再現できる）=====
 function rng(seed){ let a = seed>>>0; return function(){ a = (a + 0x6D2B79F5)>>>0; let t = a; t = Math.imul(t ^ (t>>>15), t | 1); t ^= t + Math.imul(t ^ (t>>>7), t | 61); return ((t ^ (t>>>14))>>>0) / 4294967296; }; }
 function shuffle(arr, R){ const a=arr.slice(); for (let i=a.length-1;i>0;i--){ const j=Math.floor(R()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
@@ -539,6 +562,7 @@ function makeNode(type, li, i, R, floor){
   else if (type==='elite'){ n.enemy = pool.elite; n.pp0 = pick(TUNE.ppStarts); }
   else if (type==='boss'){ n.enemy = pool.boss; n.pp0 = pick(TUNE.ppStarts); }
   else if (type==='treasure'){ n.item = pick(TUNE.treasure).id; }
+  else if (type==='event'){ n.ev = (fragScrapLeft() && R() < TUNE.events.scrapRate) ? 'scrap' : 'steam'; }   // p9-0.1.0＝切れ端の残りがあるときだけ出る（10 §1-1）
   return n;
 }
 const floorSeed = (seed, floor) => (seed ^ Math.imul(floor, 0x9E3779B1)) >>> 0;
@@ -585,12 +609,82 @@ function nodeLabel(n){
     case 'elite': return [`強 ${ENEMY(n.enemy).short}`, `圧${n.pp0}`];
     case 'boss': return [`ボス ${ENEMY(n.enemy).short}`, `圧${n.pp0}`];
     case 'treasure': return ['宝', ITEM(n.item).short];
-    case 'event': return ['出来事', TUNE.event.name];
+    case 'event': return ['出来事', TUNE.events[n.ev||'steam'].name];   // p9-0.1.0＝地図に出来事の名前〈R2〉
     case 'rest': return ['休憩', '整備/増圧'];
   }
   return [n.type,''];
 }
 const nodeTag = n => n.enemies ? `戦 ${n.enemies.map(id=>ENEMY(id).short).join('+')}圧${n.pp0s.join('/')}` : nodeLabel(n).join('');   // p8-0.1.0＝記録用＝「戦 機兵+蟲圧25/0」
+// ===== 断片（p9-0.1.0・Phase 4）=====
+// 10_Phase4_判定表 §1-1＝器〈人形3×3・敵9・切れ端3・最後1＝22本〉・開く条件・上限。文章のたたき台＝11_断片_たたき台.md（_script_frag_doc.py がこの配列から生成＝正本はここ）
+// kind＝doll〈role・sub 1 図面／2 修理／3 壊れ〉・enemy〈enemy〉・scrap・last。free＝1ランの上限に数えない。hide＝部屋の未回収の欄で条件を伏せる。ex＝抜き〈開いた場面〉・full＝全文〈部屋の記録〉
+/*FRAG-BEGIN*/
+const FRAG = [
+  {"id":"shield_1","kind":"doll","role":"tank","sub":1,"title":"窯番の図面","cond":"窯番を連れて戦闘に勝つと開く","ex":"胴の装甲の厚さだけが、三度書き直してある。厚くするたび、注記が一行ずつ短くなる。","full":"窯番の図面。胴の装甲の厚さだけが三度書き直してある。一度目の注記「炉の前に立つ」。二度目「炉の前に立つ。退かない」。三度目は数字だけ。／余白に、圧の管の引き回しが足してある。これは図面の主の手ではない。私が足した。弁も付けた。"},
+  {"id":"shield_2","kind":"doll","role":"tank","sub":2,"title":"装甲の継ぎ目","cond":"休憩の整備で窯番を直すと開く","ex":"叩けば直る。窯番はそういう作りだ。図面の主もそう書いている。「継ぎ目は残せ」。","full":"休憩で窯番を直した。凹みを叩き出し、継ぎ目のリベットを打ち直す。図面の注記「継ぎ目は残せ。次に直すのは別の手だ」。／図面の主は、自分の後に誰かが直すことを前提に描いている。この人形だけは。"},
+  {"id":"shield_3","kind":"doll","role":"tank","sub":3,"title":"窯番の設計図（残る）","cond":"？","hide":true,"ex":"炉の前で壊れた。図面は残った。装甲の裏に、初めて読める注記があった。","full":"窯番が壊れた。装甲を外して初めて、裏に彫った一行が読めた。「壊れる形に組め。壊れない形は、止まる形だ」。／図面は残っている。組み直せる。次は継ぎ目をもう一つ増やす。"},
+  {"id":"medic_1","kind":"doll","role":"medic","sub":1,"title":"注油手の図面","cond":"注油手を連れて戦闘に勝つと開く","ex":"油差しの図面に「弁の油は薄く」とある。機関区の弁は、開かないように締めてあるのに。","full":"注油手の図面。役は油差しと、弁の当たりの調整。注記「弁の油は薄く。厚いと弁が開かない」。／機関区の弁は今、開かないように締めてある。この注記は、締める前に書かれたものだ。図面の主は、弁を開けておくつもりだった。"},
+  {"id":"medic_2","kind":"doll","role":"medic","sub":2,"title":"油の減り","cond":"休憩の整備で注油手を直すと開く","ex":"この人形は自分の油を使って他を直す。図面の書き込み「油は回せ。溜めるな」。圧と同じ言い方だ。","full":"注油手を直した。油壺が空に近い。この人形は自分の油を使って、他を直している。／図面の余白の書き込み「油は回せ。溜めるな」。圧の話と同じ言い方だ。図面の主は、溜めることを嫌っていた。少なくとも、これを書いた時は。"},
+  {"id":"medic_3","kind":"doll","role":"medic","sub":3,"title":"注油手の設計図（残る）","cond":"？","hide":true,"ex":"壊れる前に、全員を一度ずつ直していた。図面どおりの順だった。","full":"注油手が壊れた。壊れる前に、全員を一度ずつ直していた。順番まで図面どおりだ。「機関士、窯番、投炭手。自分は最後」。／図面の主は順番まで書いていた。自分を最後に置く癖は、図面のあちこちにある。"},
+  {"id":"stoker_1","kind":"doll","role":"stoker","sub":1,"title":"投炭手の図面","cond":"投炭手を連れて戦闘に勝つと開く","ex":"投炭手の図面には、自分の炉の寸法が無い。代わりに「相手の炉に焚べろ」とある。","full":"投炭手の図面。焚き手なのに、自分の炉の寸法が書かれていない。注記「相手の炉に焚べろ。溢れさせろ」。／書き足しの字だ。保守機械が暴走した後に足したのだと思う。図面の主は、機械を止める側に回っていた。少なくとも一度は。"},
+  {"id":"stoker_2","kind":"doll","role":"stoker","sub":2,"title":"炉の煤","cond":"休憩の整備で投炭手を直すと開く","ex":"炉を掃除した。煤の下に刻印があった。図面の主の刻印と同じ。この炉は、機関層の炉の縮尺だ。","full":"投炭手の炉を掃除した。煤の下に刻印。図面の主の道具に彫ってあるのと同じ印だ。／炉の形は、機関層の大きな炉の縮尺になっている。図面の主は、止めたい相手の炉を、そのまま小さく組んでいた。"},
+  {"id":"stoker_3","kind":"doll","role":"stoker","sub":3,"title":"投炭手の設計図（残る）","cond":"？","hide":true,"ex":"最後まで相手の炉に焚べていた。注記「溢れさせろ」の下に、小さく「自分は溢れるな」。","full":"投炭手が壊れた。最後まで相手の炉に焚べていた。／図面の注記「溢れさせろ」の下に、小さい字で「自分は溢れるな」。読めたのは壊れてからだ。次に組むときは、この一行を先に読む。"},
+  {"id":"e_A","kind":"enemy","enemy":"A","title":"保守機械の主力","cond":"装甲機兵を倒すと開く","ex":"機兵の胴に札。「配管層・巡回・第一」。もとは見回りの機械だ。溜まりやすいのは、逃がす弁を外されているから。","full":"装甲機兵を止めた。胴に札「配管層・巡回・第一」。もとは管を見回る機械だ。／弁の座に、外した痕。図面の主の工具の痕と同じだ。圧を上げるとき、逃がす機械から先に弁を外した。だから溜まりやすく、逃がさない。"},
+  {"id":"e_B","kind":"enemy","enemy":"B","title":"放圧の機械","cond":"放圧蟲を倒すと開く","ex":"蟲の背の弁は生きている。圧60で開く。機関区で唯一、まだ放圧している機械だ。","full":"放圧蟲を止めた。背の弁は生きている。圧60で開く。機関区で、まだ放圧している機械はこれだけだ。／蒸気を浴びせてくるのは、放圧の向きが管から外れているだけだ。もとは管へ逃がしていた。弁を残された理由は、札に無い。"},
+  {"id":"e_C","kind":"enemy","enemy":"C","title":"歯車の検査機","cond":"歯車蟲を倒すと開く","ex":"甲羅の歯車は検査の型板だ。触れた物を全部「検査」する。反撃は、その癖だ。","full":"歯車蟲を止めた。甲羅の歯車は、噛み合わせを見る型板だ。触れた物を全部「検査」する。反撃は、その癖が残っているだけだ。／炉を持たないから暴発に強い。図面の主が最初に組んだ保守機械だと、札の番号が言っている。"},
+  {"id":"e_A2","kind":"enemy","enemy":"A2","free":true,"title":"改修の記録","cond":"装甲機兵・改を倒すと開く","ex":"機兵改の装甲の内側に、改修の日付と一行。「圧を上げる。弁は残す」。この一体だけ、弁が残っていた。","full":"配管層の最後の一体を止めた。装甲の内側に改修の記録。日付は三つ。一つ目「上の要求。圧を上げる。弁は残す」。二つ目「さらに上げる。弁は締める」。三つ目は日付だけ。／図面の主は、上げるたびに一行書いた。三つ目には、書くことが無かったのだと思う。弁は締めてあるが、外してはいない。"},
+  {"id":"e_D","kind":"enemy","enemy":"D","title":"炉の掃除機","cond":"蒸気砲台を倒すと開く","ex":"砲身は、もとは炉の煤を吹き飛ばす管だ。今は炉に背を向けて据わっている。誰かが向きを変えた。","full":"蒸気砲台を止めた。砲身は、もとは炉の煤を吹き飛ばす管だ。重いのは、炉に向けて据えるものだから。／今は炉に背を向けて据わっている。誰かが向きを変えた。台座の刻印は削ってある。"},
+  {"id":"e_E","kind":"enemy","enemy":"E","title":"排気の走り手","cond":"排気狼を倒すと開く","ex":"狼は排気口を走って詰まりを取る機械だ。弱った者を狙うのは、弱い流れを探す癖が残っているから。","full":"排気狼を止めた。排気口を走って詰まりを取る機械だ。弱った者を狙うのは、弱い流れを探す癖が残っているから。／圧50で放圧して持ち直すのは、排気で冷えるから。壊れているのではない。仕事をしている。相手が変わっただけだ。"},
+  {"id":"e_F","kind":"enemy","enemy":"F","title":"吸気の機械","cond":"吸気機兵を倒すと開く","ex":"吸気機兵は管から圧を吸って炉に戻す機械だ。私の背の機関を、管だと思っている。","full":"吸気機兵を止めた。管から圧を吸って炉に戻す機械だ。味方の圧を吸うのは、私の背の機関を管だと思っているから。機関士を狙うのは、圧の元を探すからだ。／図面の主の注記「吸気は最後まで残せ。止めるときに要る」。残っている。"},
+  {"id":"e_D2","kind":"enemy","enemy":"D2","free":true,"title":"改修の砲台","cond":"蒸気砲台・改を倒すと開く","ex":"砲台改の砲身に、削って消した刻印。読める字は「上」だけ。機関層の砲は、上に向けて据えてある。","full":"蒸気砲台・改を止めた。砲身に、削って消した刻印。読めるのは「上」の一字だけ。／機関層の砲はどれも、上に向けて据えてある。炉の煤を吹く管を、上へ向けた。何を吹くつもりだったのかは、書いていない。"},
+  {"id":"e_G","kind":"enemy","enemy":"G","free":true,"title":"止まらない機関","cond":"過圧機関を倒すと開く","ex":"機関の弁の座は空だ。外したのではない。最初から無い。図面の主が、弁の無い機関を組んだ。","full":"過圧機関を止めた。今日の分は。安全弁の座が無い。外した痕も無い。最初から弁を持たない図面だ。／炉の扉の裏に、図面の主の最後の一行。「上は止めるなと言う。止めない機関を組む。弁は私が持つ」。／弁を持ったまま、図面の主は機関層から戻っていない。機関は止まらない。だから私が、放圧しに降りる。"},
+  {"id":"scrap_1","kind":"scrap","free":true,"title":"切れ端・一","cond":"出来事「図面の切れ端」で拾うと開く","ex":"人形の図面の元になった紙だ。端に「保守機械・共通」。人形と敵は、同じ紙から起こしてある。","full":"足場の隙間に挟まっていた紙。人形の図面の元になった紙だ。端に「保守機械・共通」。／人形と敵は、同じ紙から起こしてある。違いは、私が弁を付けたか、図面の主が弁を外したかだけだ。"},
+  {"id":"scrap_2","kind":"scrap","free":true,"title":"切れ端・二","cond":"出来事「図面の切れ端」で拾うと開く","ex":"計算の跡。上の要求の数字が三度書き換えてある。増えるたび、下に「弁」と書いて線で消してある。","full":"計算の跡。上の要求の数字が三度書き換えてある。増えるたびに、下に「弁」と書いて、線で消してある。／消した線は三本とも一度で引いてある。迷った跡は無い。"},
+  {"id":"scrap_3","kind":"scrap","free":true,"title":"切れ端・三","cond":"出来事「図面の切れ端」で拾うと開く","ex":"図面の主の字で一行だけ。「自分の手を離れて回る形にしろ。私にはできなかった」。","full":"図面の主の字で一行だけ。「自分の手を離れて回る形にしろ。私にはできなかった」。／人形の図面は、この一行の後に描かれている。番号がそう言っている。図面の主は、自分の代わりを組もうとして、間に合わなかった。"},
+  {"id":"last","kind":"last","free":true,"title":"最後の記録","cond":"？","hide":true,"ex":"全部読んだ。図面の主は弁を持って降りた。私は弁を人形に付けた。今日の放圧、終わり。","full":"全部読んだ。図面の主は弁を持って機関層へ降り、戻らなかった。私は弁を人形に付けた。人形は壊れても図面が残る。私が降りなくても、いずれ人形だけで降りられる形にする。／機関は止まらない。上が蒸気を使う限り、明日も過圧する。今日の放圧、終わり。明日の分は明日。"}
+];
+/*FRAG-END*/
+const fragOpened = id => !!(META && META.frag && META.frag.opened && META.frag.opened[id]);
+const fragOpenedN = () => (META && META.frag && META.frag.opened) ? Object.keys(META.frag.opened).length : 0;
+const fragScrapLeft = () => FRAG.some(f=>f.kind==='scrap' && !fragOpened(f.id));
+let fragShownAt=0, fragHid0=0, fragNext=null;
+// 条件が「いま」満たされた断片〈まだ開いていないもの〉。kind＝win〈戦闘に勝った後〉／rest〈休憩の整備の後〉／end〈ランの終わり〉。ctx＝enemies〈倒した敵〉・broke〈この戦闘で壊れた人形〉・repaired〈整備で直した人形〉
+function fragCandidates(kind, ctx){
+  ctx = ctx || {}; const out = [];
+  FRAG.forEach(f=>{
+    if (fragOpened(f.id)) return;
+    if (f.kind==='doll'){
+      const m = RUN.party[f.role]; if (!m) return;
+      if (f.sub===1){ if (kind==='win' && m.hp>0) out.push(f); }
+      else if (f.sub===2){ if (kind==='rest' && (ctx.repaired||[]).includes(f.role)) out.push(f); }
+      else if (f.sub===3){ if ((kind==='win'||kind==='end') && (ctx.broke||[]).includes(f.role)) out.push(f); }
+    }
+    else if (f.kind==='enemy'){ if (kind==='win' && (ctx.enemies||[]).includes(f.enemy)) out.push(f); }
+    else if (f.kind==='last'){ if (kind==='end' && FRAG.every(g=>g.id===f.id || fragOpened(g.id))) out.push(f); }
+  });
+  return out;
+}
+// 1つの場面で開くのは1本〈配列の順＝人形→敵〉。数えるものは1ランに TUNE.frag.perRun 本まで
+function fragCheckpoint(kind, ctx, next){
+  const cands = fragCandidates(kind, ctx).filter(f => f.free || (RUN.fragN||0) < TUNE.frag.perRun);
+  if (!cands.length){ next(); return; }
+  openFrag(cands[0], next, ctx && ctx.node);
+}
+function openFrag(f, next, node){   // node＝場面の名前〈フロアのボスの後は floor が進んでいるので、戦闘後に取った名前を使う〉
+  META.frag = META.frag || {opened:{}, views:0}; META.frag.opened[f.id] = RUN.no || (META.runs+1);
+  if (!f.free) RUN.fragN = (RUN.fragN||0) + 1;
+  saveMeta(); if (!RUN.done) saveRun();
+  REC.frags = REC.frags || []; const rec = { node: node || `${RUN.floor}-${RUN.li+1}`, id:f.id, title:f.title, ms:0, chars:f.ex.length }; REC.frags.push(rec);
+  $('fg-title').textContent = `記録が開いた＝${f.title}`;
+  $('fg-body').innerHTML = `<p>${f.ex}</p><p class="dim">全文は部屋の「記録」で読める（${fragOpenedN()}／${FRAG.length}）</p>`;
+  show('s-frag'); scrEnter('other'); fragShownAt = performance.now(); fragHid0 = hidMs;
+  fragNext = () => { rec.ms = Math.max(0, Math.round(performance.now() - fragShownAt - (hidMs - fragHid0))); if (!RUN.done) saveRun(); next(); };
+}
+function renderRec(){
+  $('rec-count').textContent = `${fragOpenedN()}／${FRAG.length}`;
+  $('rec-list').innerHTML = FRAG.map(f => fragOpened(f.id) ? `<div class="ext"><div><b>${f.title}</b><small>${f.full}</small></div></div>` : `<div class="ext"><div class="dim">――<small>${f.hide ? '？' : f.cond}</small></div></div>`).join('');
+}
+const fragLine = () => { const fs = REC.frags||[], ms = fs.map(f=>f.ms).filter(v=>v>0); const med = ms.length ? ms.slice().sort((a,b)=>a-b)[Math.floor(ms.length/2)] : 0, avg = ms.length ? ms.reduce((a,b)=>a+b,0)/ms.length : 0; const sc = REC.choices.filter(c=>c.ev==='scrap'); return `このラン ${fs.length}本${fs.length?'〈'+fs.map(f=>`${f.node}:${f.title} ${(f.ms/1000).toFixed(1)}s`).join(' ')+'〉':''} / 累計 ${fragOpenedN()}/${FRAG.length} / 読んだ秒 中央値${(med/1000).toFixed(1)}s 平均${(avg/1000).toFixed(1)}s / 記録を開いた 累計${(META.frag&&META.frag.views)||0}回 / 切れ端 拾う${sc.filter(c=>c.pick==='拾う').length}・置いていく${sc.filter(c=>c.pick==='置いていく').length}`; };
 // ===== 部屋 =====
 function renderRoom(){
   const inRun = !!RUN && !RUN.done;
@@ -626,6 +720,7 @@ function renderRoom(){
   document.querySelectorAll('#make-list button[data-scrap]').forEach(b=>b.addEventListener('click', ()=>scrapAuto(b.dataset.scrap)));
   document.querySelectorAll('#ext-list button[data-ext]').forEach(b=>b.addEventListener('click', ()=>openExt(b.dataset.ext)));
   document.querySelectorAll('#ext-list button[data-buy]').forEach(b=>b.addEventListener('click', ()=>buyBlueprint(b.dataset.buy)));
+  renderRec();   // p9-0.1.0
   show('s-room'); scrEnter(null);
 }
 function makeAuto(id){ const b=DEF(id); if (!b) return; const r=b.role; if (META.party[r] || META.mat<TUNE.room.make.mat || !META.blueprints.includes(id) || (RUN&&!RUN.done)) return; META.mat -= TUNE.room.make.mat; META.party[r] = id; saveMeta(); renderRoom(); }
@@ -635,7 +730,7 @@ function buyBlueprint(id){ if (!META.ext.workshop || META.blueprints.includes(id
 function newRun(){
   const seed = ((Date.now() & 0xffffffff) ^ Math.floor(Math.random()*0x7fffffff)) >>> 0;
   const party = {}; ROLES.forEach(r=>{ const id = META.party[r]; party[r] = id ? { type:id, hp:DEF(id).hp, brokeAt:null } : null; });
-  RUN = { ver:VER, seed, floor:1, map:genMap(floorSeed(seed,1),1), li:-1, ii:-1, pending:false, hero:TUNE.hero.hp, party, pp:0, ovf:0, bonus:BONUS0(), items:[], bpFound:[], gold:0, mat:0, weapon:META.weapon, path:[], done:false, result:'', resumed:0 };
+  RUN = { ver:VER, seed, no:META.runs+1, fragN:0, floor:1, map:genMap(floorSeed(seed,1),1), li:-1, ii:-1, pending:false, hero:TUNE.hero.hp, party, pp:0, ovf:0, bonus:BONUS0(), items:[], bpFound:[], gold:0, mat:0, weapon:META.weapon, path:[], done:false, result:'', resumed:0 };
   REC = newRec(); RUN.rec = REC;
   saveRun(); showMap();
 }
@@ -697,7 +792,8 @@ function resolveNode(n){
   else if (n.type==='event') showEvent(n);
   else if (n.type==='rest') showRest(n);
 }
-function nodeDone(){ const n=cur(); n.done=true; RUN.pending=false; saveRun(); showMap(); }
+function nodeFinish(){ const n=cur(); n.done=true; RUN.pending=false; saveRun(); }   // p9-0.1.0＝ノードを済ませる〈断片の画面を挟むために分けた〉
+function nodeDone(){ nodeFinish(); showMap(); }
 // ===== 宝・出来事・休憩 =====
 function applyItem(it){
   const b = RUN.bonus;
@@ -710,18 +806,22 @@ function showTreasure(n){
   $('tr-body').innerHTML = `<p><b>${it.name}</b>＝${it.desc}</p><p class="dim">このランの宝＝${RUN.items.map(id=>ITEM(id).short).join('・')}（持ち帰れない）</p>`;
   show('s-treasure'); scrEnter('other');
 }
-function showEvent(n){
-  const ev=TUNE.event;
+function showEvent(n){   // p9-0.1.0＝出来事2種〈steam／scrap〉（10 §1-1）
+  const ev = TUNE.events[n.ev||'steam'];
   $('ev-title').textContent = ev.name; $('ev-body').innerHTML = `<p>${ev.text}</p><p class="dim">機関士 ${RUN.hero}/${TUNE.hero.hp}・人形 ${partyTextRole(RUN.party)}</p>`;
-  $('b-ev-a').innerHTML = `<b>${ev.a.label}</b><small>金+${ev.a.gold}・機関士HP${ev.a.hp}</small>`;
-  $('b-ev-b').innerHTML = `<b>${ev.b.label}</b><small>全員HP+${ev.b.heal}</small>`;
+  if (n.ev==='scrap'){ $('b-ev-a').innerHTML = `<b>${ev.a.label}</b><small>${ev.a.note}（記録 ${fragOpenedN()}／${FRAG.length}）</small>`; $('b-ev-b').innerHTML = `<b>${ev.b.label}</b><small>素材+${ev.b.mat}</small>`; }
+  else { $('b-ev-a').innerHTML = `<b>${ev.a.label}</b><small>金+${ev.a.gold}・機関士HP${ev.a.hp}</small>`; $('b-ev-b').innerHTML = `<b>${ev.b.label}</b><small>全員HP+${ev.b.heal}</small>`; }
   show('s-event'); scrEnter('other'); choiceShownAt = performance.now();
 }
 function evPick(which){
-  const ev=TUNE.event;
+  const n = cur(), ev = TUNE.events[n.ev||'steam'];
+  REC.choices.push({ node:`${RUN.floor}-${RUN.li+1}`, kind:'event', ev:n.ev||'steam', pick: which==='a'?ev.a.label:ev.b.label, ms:Math.round(performance.now()-choiceShownAt) });
+  if (n.ev==='scrap'){   // 拾う＝切れ端の記録を順に1本〈上限に数えない〉／置いていく＝素材
+    if (which==='a'){ const f = FRAG.find(g=>g.kind==='scrap' && !fragOpened(g.id)); nodeFinish(); if (f){ openFrag(f, showMap); return; } RUN.mat += 1; showMap(); return; }
+    RUN.mat += ev.b.mat; nodeDone(); return;
+  }
   if (which==='a'){ RUN.gold += ev.a.gold; RUN.hero = Math.max(1, RUN.hero + ev.a.hp); }
   else { RUN.hero = Math.min(TUNE.hero.hp, RUN.hero + ev.b.heal); healParty(ev.b.heal); }
-  REC.choices.push({ node:`${RUN.floor}-${RUN.li+1}`, kind:'event', pick: which==='a'?ev.a.label:ev.b.label, ms:Math.round(performance.now()-choiceShownAt) });
   nodeDone();
 }
 function showRest(n){
@@ -731,9 +831,11 @@ function showRest(n){
   show('s-rest'); scrEnter('other'); choiceShownAt = performance.now();
 }
 function rsPick(which){
-  if (which==='a'){ RUN.hero = TUNE.hero.hp; healParty(null); }
+  let repaired = [];
+  if (which==='a'){ repaired = ROLES.filter(r=>{ const m=RUN.party[r]; return m && m.hp>0 && m.hp < DEF(m.type).hp; }); RUN.hero = TUNE.hero.hp; healParty(null); }   // p9-0.1.0＝直した人形〈HPが減っていた〉＝人形の記録2の条件
   else { RUN.ovf += TUNE.rest.overflowUp; }
   REC.choices.push({ node:`${RUN.floor}-${RUN.li+1}`, kind:'rest', pick: which==='a'?'整備':'増圧', ms:Math.round(performance.now()-choiceShownAt) });
+  if (which==='a'){ nodeFinish(); fragCheckpoint('rest', {repaired}, showMap); return; }
   nodeDone();
 }
 // ===== 戦闘（p4＝Phase 2′）=====
@@ -1064,16 +1166,17 @@ function dropBlueprint(n){   // 強敵50%・フロア2のボス100%＝未所持�
 }
 function afterBattle(win){
   const bt = REC.bt; bt.win = win; bt.sec = Math.round((performance.now()-bt.start)/1000); REC.battles.push(bt); REC.bt = null;
-  ROLES.forEach(r=>{ const m=RUN.party[r], sm=S.party[r]; if (m && sm){ if (m.hp>0 && sm.hp<=0) m.brokeAt = `${RUN.floor}-${RUN.li+1}`; m.hp = Math.max(0, sm.hp); } });
+  const broke = [];
+  ROLES.forEach(r=>{ const m=RUN.party[r], sm=S.party[r]; if (m && sm){ if (m.hp>0 && sm.hp<=0){ m.brokeAt = `${RUN.floor}-${RUN.li+1}`; broke.push(r); } m.hp = Math.max(0, sm.hp); } });
   RUN.hero = S.hero; RUN.pp = S.pp;
+  const n = cur(); RUN.fragCtx = { enemies: n.enemies || [n.enemy], broke, node:`${RUN.floor}-${RUN.li+1}` };   // p9-0.1.0＝断片の場面の材料〈この戦闘で倒した敵・壊れた人形〉（10 §1-1）
   if (!win){ endRun(false, groupName()); return; }
-  const n = cur();
   const got = dropBlueprint(n);
   const gotMsg = got ? `<p class="ok">設計図「${got.name}」（${got.role}）を拾った＝持ち帰れる。</p>` : '';
   if (n.type==='boss'){
     n.done=true; RUN.pending=false; RUN.gold += TUNE.bossReward.gold; RUN.mat += TUNE.bossReward.mat;
     flushScr(); REC.floors.push({ floor:RUN.floor, sec:Math.round((REC.t.map+REC.t.battle+REC.t.other)/1000), battles:REC.battles.length, nodes:RUN.li+1 });
-    if (RUN.floor >= TUNE.floors){ endRun(true); return; }
+    if (RUN.floor >= TUNE.floors){ fragCheckpoint('win', RUN.fragCtx, ()=>endRun(true)); return; }   // p9-0.1.0＝最後のボスの記録は結果の前に
     const h = TUNE.restHealBattle; RUN.hero = Math.min(TUNE.hero.hp, RUN.hero + h); if (TUNE.dollsHealAfterBattle) healParty(h);
     const doneFloor = RUN.floor; RUN.floor++; RUN.map = genMap(floorSeed(RUN.seed, RUN.floor), RUN.floor); RUN.li=-1; RUN.ii=-1; saveRun();
     $('fl-title').textContent = `フロア${doneFloor}のボス ${groupName()} を倒した`;
@@ -1097,7 +1200,7 @@ function endRun(win, cause){
   META.runs++;
   REC.take = { win, gold: win?RUN.gold:0, goldLost: win?0:RUN.gold, mat:RUN.mat, party: ROLES.map(r => RUN.party[r] ? { role:r, type:RUN.party[r].type, hp:RUN.party[r].hp, brokeAt:RUN.party[r].brokeAt, alive: win && RUN.party[r].hp>0 } : null), hadAuto: ROLES.some(r=>RUN.party[r]), nodes:RUN.path.length, floor:RUN.floor, path:RUN.path.slice(), result:RUN.result, resumed:RUN.resumed||0, items:RUN.items.slice(), bpFound:RUN.bpFound.slice() };
   saveMeta(); try{ localStorage.removeItem(KEY_RUN); }catch(e){}
-  showResult();
+  fragCheckpoint('end', RUN.fragCtx||{}, showResult);   // p9-0.1.0＝ランの終わり＝壊れた人形の記録・最後の記録
 }
 // ===== 結果 =====
 function summarize(){
@@ -1137,13 +1240,14 @@ function showResult(){
   h += `</table>`;
   h += `<p>ノード選択＝${s.picks}回（幅2以上）・考える時間 中央値 <b>${(s.pickMed/1000).toFixed(1)}秒</b>・平均 ${(s.pickAvg/1000).toFixed(1)}秒</p>`;
   h += `<p>戦闘＝総ターン ${s.n}・1ターン <b>${s.secPerTurn.toFixed(1)}秒</b>・連打率 <b>${s.rep}%</b>・技を使ったターン ${s.techTurns}・放圧 ${REC.vents}回（押し付けた圧 ${REC.ventPushed||0}・そのターンの敵の暴発 ${REC.ventBursts||0}回）・落ちた技 ${(REC.skills.tank.fell||0)+(REC.skills.medic.fell||0)+(REC.skills.stoker.fell||0)}回・暴発 味方${REC.burstsP} 敵${REC.burstsE}・狙い替え ${REC.retarget||0}回・放圧で2体以上が同時に暴発 ${REC.ventMulti||0}回・蒸気で溢れた ${REC.steamBursts||0}回・過熱の見送り ${REC.skills.stoker.held||0}回・先読みのずれ ${REC.projMiss||0}回・倒して勝つ手の暴発 ${REC.winBursts||0}回・放圧のボタンに砲 ${REC.ventBigShown||0}回（押した ${REC.ventBigPressed||0}回）</p>`;   // p8-0.5.0・p8-0.6.0
+  h += `<p>記録の断片＝${fragLine()}</p>`;   // p9-0.1.0
   $('r-table').innerHTML = h;
   document.querySelectorAll('#qs button').forEach(b=>b.classList.remove('sel'));
   REC.q = {}; buildOut(); show('s-result');
 }
 function buildOut(){
   const s = summarize(), tk = REC.take, L = [];
-  L.push(`[OVERPRESSURE 難易度② 放圧の砲] ${VER} ${new Date().toLocaleString('ja-JP')}`);
+  L.push(`[OVERPRESSURE Phase 4 断片] ${VER} ${new Date().toLocaleString('ja-JP')}`);
   L.push(`[環境] ${window.navigator.standalone?'ホーム画面':'ブラウザ'} / 窓 ${innerWidth}x${innerHeight} / dpr ${devicePixelRatio} / ${location.protocol} / 画像 ${imgStatus()} 倍率${sprScale.toFixed(2)}`);
   L.push(`[ラン] ${tk.result} / 所要 ${Math.round(s.total/1000)}秒（マップ${Math.round(REC.t.map/1000)} 戦闘${Math.round(REC.t.battle/1000)} 他${Math.round(REC.t.other/1000)}）/ フロア ${tk.floor}/${TUNE.floors} / ノード ${tk.nodes}/${RUN.map.length*TUNE.floors} / 戦闘 ${REC.battles.length} / 再開 ${tk.resumed}回 / 種 ${RUN.seed}`);
   if (REC.floors.length) L.push(`[フロア] ` + REC.floors.map(f=>`F${f.floor}:${f.sec}秒まで(戦闘${f.battles})`).join(' '));
@@ -1160,8 +1264,9 @@ function buildOut(){
   L.push(`[戦闘開始のHP 機/窯/注/投] ` + REC.battles.map(b=>`${b.node}:${(b.hp0||[]).map(v=>v===null?'-':v===0?'×':v).join('/')}`).join(' ') + ` / 人形の最低（戦闘中を含む） ` + dollMinLine());
   L.push(`[役の技] ` + roleLine());
   L.push(`[敵の狙い] ` + hitsLine());
+  L.push(`[断片] ` + fragLine());   // p9-0.1.0（10 §1-3）
   L.push(`[設計図] 拾得 ${tk.bpFound.length?tk.bpFound.map(id=>DEF(id).name).join('・'):'なし'} / 所持 ${META.blueprints.map(id=>DEF(id).name).join('・')} / 工房 ${META.ext.workshop?'開設済み':'未開設'}`);
-  L.push(`[Q1 ノード迷い] ${REC.q.q1||'未回答'} / [Q2 戦闘迷い] ${REC.q.q2||'未回答'} / [Q3 もう1回] ${REC.q.q3||'未回答'} / [Q4 敵で攻め方] ${REC.q.q4||'未回答'} / [Q5 絵で性質] ${REC.q.q5||'未回答'} / [Q6 圧の配分] ${REC.q.q6||'未回答'} / [Q7 傷で打ち方] ${REC.q.q7||'未回答'} / [Q8 狙いで迷い] ${REC.q.q8||'未回答'} / [Q9 狙いが分かる] ${REC.q.q9||'未回答'} / [Q10 見比べ] ${REC.q.q10||'未回答'}`);
+  L.push(`[Q1 ノード迷い] ${REC.q.q1||'未回答'} / [Q2 戦闘迷い] ${REC.q.q2||'未回答'} / [Q3 もう1回] ${REC.q.q3||'未回答'} / [Q4 敵で攻め方] ${REC.q.q4||'未回答'} / [Q5 絵で性質] ${REC.q.q5||'未回答'} / [Q6 圧の配分] ${REC.q.q6||'未回答'} / [Q7 傷で打ち方] ${REC.q.q7||'未回答'} / [Q8 狙いで迷い] ${REC.q.q8||'未回答'} / [Q9 狙いが分かる] ${REC.q.q9||'未回答'} / [Q10 見比べ] ${REC.q.q10||'未回答'} / [Q11 断片] ${REC.q.q11||'未回答'}`);
   const byB = {}; REC.turns.forEach(t=>{ (byB[t.b]=byB[t.b]||[]).push(`${t.turn}:${t.cmd.slice(0,2)}@${t.ppBefore}/${t.epp}${t.plan?'+'+t.plan:''}${t.fell?'×'+t.fell:''}${t.held?'見':''}${t.miss?'≠':''}${t.burst?'!':''}${t.eb?'※':''}`); });   // p4-0.2.0＝×＝落ちた技・!＝味方の暴発。p6-0.1.0＝※＝このターンに敵が暴発。p8-0.4.0＝見＝過熱を見送った
   L.push(`[手順] ` + REC.battles.map((b,i)=>`${b.node}${b.id}@${b.pp0}: ${(byB[i]||[]).join(' ')}`).join(' | '));
   $('out').value = L.join('\n');
@@ -1170,9 +1275,11 @@ function buildOut(){
 $('b-sortie').addEventListener('click', ()=>{ if (RUN && !RUN.done){ if (RUN.pending) resolveNode(cur()); else showMap(); } else newRun(); });
 $('b-wpn').addEventListener('click', ()=>{ if (RUN&&!RUN.done) return; const c=TUNE.room.weapon.costs[META.weapon]; if (c==null || META.gold<c) return; META.gold -= c; META.weapon++; saveMeta(); renderRoom(); });
 $('b-map-room').addEventListener('click', ()=>{ saveRun(); renderRoom(); });
-$('b-rw').addEventListener('click', nodeDone);
+$('b-rw').addEventListener('click', ()=>{ nodeFinish(); fragCheckpoint('win', RUN.fragCtx||{}, showMap); });   // p9-0.1.0＝報酬の後に断片の場面
 $('e-box').addEventListener('click', ev => { const c = ev.target.closest('.ecol'); if (c) setTarget(+c.dataset.i); });   // p8-0.2.0＝上の枠の列をタップ＝その敵を狙う〈旧＝枠のどこでも次の敵へ送る〉
-$('b-fl').addEventListener('click', showMap);
+$('b-fl').addEventListener('click', ()=>fragCheckpoint('win', RUN.fragCtx||{}, showMap));   // p9-0.1.0
+$('b-fg').addEventListener('click', ()=>{ const f=fragNext; fragNext=null; if (f) f(); });
+$('rec-details').addEventListener('toggle', ()=>{ if ($('rec-details').open){ META.frag = META.frag||{opened:{}, views:0}; META.frag.views = (META.frag.views||0)+1; saveMeta(); } });   // p9-0.1.0＝部屋の記録を開いた回数（10 §2 #2）
 $('b-tr').addEventListener('click', nodeDone);
 $('b-ev-a').addEventListener('click', ()=>evPick('a'));
 $('b-ev-b').addEventListener('click', ()=>evPick('b'));
@@ -1192,7 +1299,7 @@ let resetArmed=false;
 $('b-reset').addEventListener('click', ()=>{ if (!resetArmed){ resetArmed=true; $('b-reset').textContent='本当に初期化する？（もう1回押す）'; setTimeout(()=>{ resetArmed=false; $('b-reset').textContent='すべて初期化（部屋・遠征）'; }, 4000); return; } META=newMeta(); RUN=null; REC=null; saveMeta(); saveRun(); resetArmed=false; $('b-reset').textContent='すべて初期化（部屋・遠征）'; $('save-msg').textContent='初期化しました'; renderRoom(); });
 $('ver').textContent = VER;
 preloadImages(); loadAll(); renderRoom();
-window.OP = { floorSeed, project, get S(){return S;}, get RUN(){return RUN;}, get META(){return META;}, get REC(){return REC;}, TUNE, ROLES, act, togglePlan, newRun, pickNode, reachable, genMap, nodeDone, evPick, rsPick, startBattle, renderRoom, showMap, loadAll, summarize, buildOut, resolveNode, cur, makeAuto, scrapAuto, openExt, buyBlueprint, migrateMeta, hasCmd, aliveParty, setTarget, cycleTarget, fightComps, enemyActAll, groupN };
+window.OP = { floorSeed, project, FRAG, fragCandidates, fragCheckpoint, openFrag, fragOpened, renderRec, fragLine, nodeFinish, get S(){return S;}, get RUN(){return RUN;}, get META(){return META;}, get REC(){return REC;}, TUNE, ROLES, act, togglePlan, newRun, pickNode, reachable, genMap, nodeDone, evPick, rsPick, startBattle, renderRoom, showMap, loadAll, summarize, buildOut, resolveNode, cur, makeAuto, scrapAuto, openExt, buyBlueprint, migrateMeta, hasCmd, aliveParty, setTarget, cycleTarget, fightComps, enemyActAll, groupN };
 </script>
 </body>
 </html>
